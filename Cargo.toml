@@ -1,0 +1,25 @@
+[package]
+name = "ironkeys"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.88"
+license = "AGPL-3.0-or-later"
+description = "Key custody for the IronSecurity stack: one interface over software, HSM, TPM and cloud keys"
+repository = "https://github.com/nervosys/IronKeys"
+readme = "README.md"
+keywords = ["cryptography", "hsm", "pkcs11", "tpm", "kms"]
+categories = ["cryptography", "no-std"]
+# A scaffold: not for publication until the backends are extracted.
+publish = false
+
+[dependencies]
+# The signing interface and custody classes come from IronCrypto.
+ic-core = { version = ">=0.2.20, <0.3", default-features = false }
+
+[features]
+default = ["std"]
+std = ["ic-core/std"]
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
