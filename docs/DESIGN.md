@@ -49,7 +49,11 @@ Unsafe code is confined to the two FFI crates. Everything is P-384 only today.
    apart from names. IPG still builds its own copies: it pins exact versions
    from crates.io, so it can depend on these only once they are published.
    Until then a fix to either copy must be made in both.
-3. **TPM command layer.** Move `src/tpm2/` here as `ironkeys-tpm2`.
+3. **TPM command layer (copied).** `src/tpm2/` is here as `ironkeys-tpm2`,
+   from IPG commit `1ffc55e`. It needed an error type, a random source and
+   two P-384 helpers of its own in place of IPG's; nothing else changed. It
+   keeps IPG's error codes as strings so that IPG's adapter maps them one to
+   one. IPG's TPM and swtpm tests have not been run against this copy.
 4. **Backends.** Implement `Signer` and `KeyAgreement` for each backend here.
    IPG keeps thin adapters from these to its `IdentityKey` trait.
 5. **AWS KMS.** Move after IPG's KMS client runs on IronSocketLayer, since it

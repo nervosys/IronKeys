@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Copied IronPrivacyGuard's TPM 2.0 layer here as `ironkeys-tpm2` (IPG commit
+  `1ffc55e`), with its imports re-rooted.
 - Added the software provider (feature `software`): IronCrypto's
   `SoftwareSigner`, loaded under a custody policy. Needs IronCrypto 0.2.21.
 - Copied IronPrivacyGuard's native FFI crates here as `ironkeys-pkcs11` and

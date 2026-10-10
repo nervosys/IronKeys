@@ -4,10 +4,10 @@ Key custody for the IronSecurity stack: one interface over private keys held in
 software, a PKCS#11 HSM, a TPM 2.0, Windows CNG or AWS KMS.
 
 **Status: early.** The interface, provider descriptions, custody policy and
-software provider exist and are tested. The two native FFI crates have been
-copied from IronPrivacyGuard; the TPM command layer and the device and service
-backends have not. Nothing is published, and IronPrivacyGuard still uses its
-own copies.
+software provider exist and are tested. The two native FFI crates and the TPM
+2.0 layer have been copied from IronPrivacyGuard; the device and service
+backends that implement `Signer` and `KeyAgreement` over them have not. Nothing
+is published, and IronPrivacyGuard still uses its own copies.
 
 ## What is here
 
@@ -29,10 +29,16 @@ software provider).
 | `ironkeys` | The interface, descriptions, policy and software provider |
 | `crates/ironkeys-pkcs11` | Native PKCS#11 boundary: a vendor module loaded from an absolute path |
 | `crates/ironkeys-cng` | Windows CNG and TPM Base Services (Windows only) |
+| `crates/ironkeys-tpm2` | TPM 2.0 in safe Rust: marshalling, structures, software MakeCredential and, with `device`, HMAC sessions and commands over Windows TBS, a Linux device or swtpm |
 
-Unsafe code is confined to those two FFI crates. They are IronPrivacyGuard's
+Unsafe code is confined to the two FFI crates. They are IronPrivacyGuard's
 `ipg-pkcs11` and `ipg-cng` at commit `1e12250`, unchanged apart from names.
 Their device tests are ignored or skipped unless a token or TPM is configured.
+
+`ironkeys-tpm2` is IronPrivacyGuard's `src/tpm2` at commit `1ffc55e` with its
+imports re-rooted and its items made public. Its three unit tests pass here.
+The device paths are exercised only by IronPrivacyGuard's own TPM and swtpm
+tests, which have not been run against this copy.
 
 ## What it does not do
 

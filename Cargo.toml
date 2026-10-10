@@ -13,7 +13,7 @@ categories = ["cryptography", "no-std"]
 publish = false
 
 [workspace]
-members = ["crates/ironkeys-pkcs11", "crates/ironkeys-cng"]
+members = ["crates/ironkeys-pkcs11", "crates/ironkeys-cng", "crates/ironkeys-tpm2"]
 
 [dependencies]
 # The signing interface and custody classes come from IronCrypto.
