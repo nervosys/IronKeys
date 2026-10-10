@@ -3,9 +3,11 @@
 Key custody for the IronSecurity stack: one interface over private keys held in
 software, a PKCS#11 HSM, a TPM 2.0, Windows CNG or AWS KMS.
 
-**Status: scaffold.** The interface, provider descriptions and custody policy
-exist and are tested. The backends have not been moved here yet; they still
-live in IronPrivacyGuard. The crate is not published.
+**Status: early.** The interface, provider descriptions, custody policy and
+software provider exist and are tested. The two native FFI crates have been
+copied from IronPrivacyGuard; the TPM command layer and the device and service
+backends have not. Nothing is published, and IronPrivacyGuard still uses its
+own copies.
 
 ## What is here
 
@@ -16,13 +18,26 @@ live in IronPrivacyGuard. The crate is not published.
 | `Provider`, `ProviderKind` | Describe a configured backend: custody class, exportability, declared validation |
 | `Validation` | What an operator declares about a module's FIPS 140 validation |
 | `CustodyPolicy` | Which providers a host accepts: any, non-exportable, hardware, or declared-validated |
+| `software` (feature `software`) | In-memory keys: IronCrypto's `SoftwareSigner`, loaded under a custody policy |
 
-The crate is `no_std` without its default `std` feature, forbids unsafe code,
-and depends only on IronCrypto's `ic-core`.
+The `ironkeys` crate is `no_std` without its default `std` feature, forbids
+unsafe code, and depends only on IronCrypto (`ic-core`, and `ic-sig` for the
+software provider).
+
+| Crate | Purpose |
+| --- | --- |
+| `ironkeys` | The interface, descriptions, policy and software provider |
+| `crates/ironkeys-pkcs11` | Native PKCS#11 boundary: a vendor module loaded from an absolute path |
+| `crates/ironkeys-cng` | Windows CNG and TPM Base Services (Windows only) |
+
+Unsafe code is confined to those two FFI crates. They are IronPrivacyGuard's
+`ipg-pkcs11` and `ipg-cng` at commit `1e12250`, unchanged apart from names.
+Their device tests are ignored or skipped unless a token or TPM is configured.
 
 ## What it does not do
 
-- It performs no cryptography and talks to no device yet.
+- It has no `Signer` or `KeyAgreement` implementation for a device or service
+  yet; the FFI crates are the layer those will be built on.
 - It validates nothing. `Validation` records an operator's declaration; the
   crate cannot check a certificate number against a module, and a provider
   kind never implies validation.

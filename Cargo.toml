@@ -12,13 +12,25 @@ categories = ["cryptography", "no-std"]
 # A scaffold: not for publication until the backends are extracted.
 publish = false
 
+[workspace]
+members = ["crates/ironkeys-pkcs11", "crates/ironkeys-cng"]
+
 [dependencies]
 # The signing interface and custody classes come from IronCrypto.
-ic-core = { version = ">=0.2.20, <0.3", default-features = false }
+ic-core = { version = ">=0.2.21, <0.3", default-features = false }
+# In-memory keys: IronCrypto's signer, first released in 0.2.21.
+ic-sig = { version = ">=0.2.21, <0.3", default-features = false, optional = true }
+
+# The software provider's tests build a key and verify what it signs.
+[dev-dependencies]
+ic-pkix = { version = ">=0.2.21, <0.3" }
+ic-drbg = { version = ">=0.2.21, <0.3", features = ["std"] }
 
 [features]
 default = ["std"]
-std = ["ic-core/std"]
+std = ["ic-core/std", "ic-sig?/std"]
+# The software provider: keys held in this process's memory.
+software = ["dep:ic-sig"]
 
 [lints.rust]
 unsafe_code = "forbid"

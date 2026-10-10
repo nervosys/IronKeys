@@ -41,10 +41,14 @@ Unsafe code is confined to the two FFI crates. Everything is P-384 only today.
 
 ## Extraction plan
 
-1. **Interface (done in this scaffold).** `Signer`, `KeyAgreement`, `Provider`,
-   `Validation`, `CustodyPolicy`.
-2. **FFI crates.** Move `ipg-pkcs11` and `ipg-cng` here as `ironkeys-pkcs11`
-   and `ironkeys-cng`, unchanged apart from names. IPG then depends on them.
+1. **Interface (done).** `Signer`, `KeyAgreement`, `Provider`, `Validation`,
+   `CustodyPolicy`, and the software provider over IronCrypto's
+   `SoftwareSigner`.
+2. **FFI crates (copied).** `ipg-pkcs11` and `ipg-cng` are here as
+   `ironkeys-pkcs11` and `ironkeys-cng`, from IPG commit `1e12250`, unchanged
+   apart from names. IPG still builds its own copies: it pins exact versions
+   from crates.io, so it can depend on these only once they are published.
+   Until then a fix to either copy must be made in both.
 3. **TPM command layer.** Move `src/tpm2/` here as `ironkeys-tpm2`.
 4. **Backends.** Implement `Signer` and `KeyAgreement` for each backend here.
    IPG keeps thin adapters from these to its `IdentityKey` trait.

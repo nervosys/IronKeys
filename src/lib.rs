@@ -12,9 +12,10 @@
 //!
 //! # Status
 //!
-//! This is a scaffold: the interface, the provider descriptions and the
-//! policy. The backends (PKCS#11, TPM 2.0, AWS KMS, Windows CNG) still live in
-//! IronPrivacyGuard and move here next; see `docs/DESIGN.md`.
+//! The interface, the provider descriptions, the policy and the software
+//! provider (the `software` feature) are here. The device and service
+//! backends (PKCS#11, TPM 2.0, AWS KMS, Windows CNG) are being moved from
+//! IronPrivacyGuard; see `docs/DESIGN.md`.
 //!
 //! Nothing here performs cryptography, and nothing here is validated.
 //! [`Validation`] records what an operator declares about a module; this crate
@@ -23,6 +24,9 @@
 
 pub use ic_core::sig::{Custody, SignatureAlgorithm, Signer};
 pub use ic_core::{Error, ErrorKind, Result};
+
+#[cfg(feature = "software")]
+pub mod software;
 
 /// A key-agreement algorithm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
