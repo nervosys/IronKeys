@@ -56,6 +56,13 @@ Unsafe code is confined to the two FFI crates. Everything is P-384 only today.
    one. IPG's TPM and swtpm tests have not been run against this copy.
 4. **Backends.** Implement `Signer` and `KeyAgreement` for each backend here.
    IPG keeps thin adapters from these to its `IdentityKey` trait.
+   - **PKCS#11 (done).** `pkcs11::Pkcs11Signer` and `Pkcs11KeyAgreement`. A
+     PKCS#11 session belongs to one thread and a `Signer` must be shareable,
+     so each key owns a worker thread that holds its session. Keys must be
+     P-384, sensitive and non-extractable. Tested against SoftHSM by
+     `scripts/test-softhsm.sh`. Not carried over from IPG: in-token envelope
+     decryption (`open_in_device`), which follows IPG's envelope layout.
+   - **TPM 2.0, Windows CNG, AWS KMS.** Not written.
 5. **AWS KMS.** Move after IPG's KMS client runs on IronSocketLayer, since it
    needs TLS and a root store.
 6. **IPG adoption.** IPG's `CustodyPolicy` and custody reporting map onto the
@@ -79,9 +86,13 @@ Each step should leave IPG's full test matrix passing.
 
 - **Algorithms.** The backends implement P-384 only. IronSocketLayer's server
   keys may need P-256, RSA or Ed25519. Which are required first?
-- **Errors.** The backends return IPG's error type with IPG error codes.
-  IronKeys uses IronCrypto's `Error`; a backend-specific error with a provider
-  status code may be needed for PKCS#11 `CKR_*` and TPM response codes.
+- **Errors.** Opening a key returns a provider error (`pkcs11::OpenError`
+  carries the PKCS#11 return value and function). `Signer::sign` and
+  `KeyAgreement::agree` must return IronCrypto's `Error`, whose kinds have
+  none for "the device refused or failed": the PKCS#11 provider reports an
+  unavailable mechanism as `Unsupported` and every other device failure as
+  `InvalidParameter`, which loses the return value. A device-failure kind in
+  IronCrypto, or a status accessor here, would fix that.
 - **Encodings.** `Signer` uses DER `SubjectPublicKeyInfo` keys and DER ECDSA
   signatures. IPG uses raw `r || s`. The adapters convert.
 - **Blocking.** KMS operations are network calls made inside `sign` and

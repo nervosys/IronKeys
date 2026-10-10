@@ -20,17 +20,27 @@ members = ["crates/ironkeys-pkcs11", "crates/ironkeys-cng", "crates/ironkeys-tpm
 ic-core = { version = ">=0.2.21, <0.3", default-features = false }
 # In-memory keys: IronCrypto's signer, first released in 0.2.21.
 ic-sig = { version = ">=0.2.21, <0.3", default-features = false, optional = true }
+# The PKCS#11 provider: the native boundary, and IronCrypto for the digest,
+# point validation and signature encoding around it.
+ironkeys-pkcs11 = { path = "crates/ironkeys-pkcs11", version = "0.0.0", optional = true }
+ic-ec = { version = ">=0.2.21, <0.3", optional = true }
+ic-hash = { version = ">=0.2.21, <0.3", optional = true }
+ic-pkix = { version = ">=0.2.21, <0.3", optional = true }
 
 # The software provider's tests build a key and verify what it signs.
 [dev-dependencies]
 ic-pkix = { version = ">=0.2.21, <0.3" }
 ic-drbg = { version = ">=0.2.21, <0.3", features = ["std"] }
+ic-ec = { version = ">=0.2.21, <0.3" }
+ic-sig = { version = ">=0.2.21, <0.3" }
 
 [features]
 default = ["std"]
 std = ["ic-core/std", "ic-sig?/std"]
 # The software provider: keys held in this process's memory.
 software = ["dep:ic-sig"]
+# The PKCS#11 provider: P-384 keys in an HSM or token.
+pkcs11 = ["std", "dep:ironkeys-pkcs11", "dep:ic-ec", "dep:ic-hash", "dep:ic-pkix"]
 
 [lints.rust]
 unsafe_code = "forbid"

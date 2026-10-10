@@ -19,3 +19,10 @@ jobs:
         with:
           python-version: '3.12'
       - run: python scripts/check-first-party-only.py --all-features
+  softhsm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y softhsm2
+      - run: bash scripts/test-softhsm.sh

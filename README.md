@@ -4,10 +4,12 @@ Key custody for the IronSecurity stack: one interface over private keys held in
 software, a PKCS#11 HSM, a TPM 2.0, Windows CNG or AWS KMS.
 
 **Status: early.** The interface, provider descriptions, custody policy and
-software provider exist and are tested. The two native FFI crates and the TPM
-2.0 layer have been copied from IronPrivacyGuard; the device and service
-backends that implement `Signer` and `KeyAgreement` over them have not. Nothing
-is published, and IronPrivacyGuard still uses its own copies.
+software provider exist and are tested, and the PKCS#11 provider signs and
+agrees with keys in a token (tested against SoftHSM). The two native FFI crates
+and the TPM 2.0 layer have been copied from IronPrivacyGuard; the TPM, Windows
+CNG and AWS KMS providers that implement `Signer` and `KeyAgreement` over them
+have not been written. Nothing is published, and IronPrivacyGuard still uses
+its own copies.
 
 ## What is here
 
@@ -19,6 +21,7 @@ is published, and IronPrivacyGuard still uses its own copies.
 | `Validation` | What an operator declares about a module's FIPS 140 validation |
 | `CustodyPolicy` | Which providers a host accepts: any, non-exportable, hardware, or declared-validated |
 | `software` (feature `software`) | In-memory keys: IronCrypto's `SoftwareSigner`, loaded under a custody policy |
+| `pkcs11` (feature `pkcs11`) | `Pkcs11Signer` and `Pkcs11KeyAgreement`: P-384 keys that stay in an HSM or token |
 
 The `ironkeys` crate is `no_std` without its default `std` feature, forbids
 unsafe code, and depends only on IronCrypto (`ic-core`, and `ic-sig` for the
@@ -42,8 +45,10 @@ tests, which have not been run against this copy.
 
 ## What it does not do
 
-- It has no `Signer` or `KeyAgreement` implementation for a device or service
-  yet; the FFI crates are the layer those will be built on.
+- It has no `Signer` or `KeyAgreement` implementation for a TPM, Windows CNG
+  or AWS KMS yet.
+- The PKCS#11 provider supports P-384 only, and has been run against SoftHSM,
+  not against a hardware HSM.
 - It validates nothing. `Validation` records an operator's declaration; the
   crate cannot check a certificate number against a module, and a provider
   kind never implies validation.
@@ -62,6 +67,7 @@ cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
 cargo test --locked --workspace --all-features
 cargo test --locked --workspace --no-default-features
 python scripts/check-first-party-only.py --all-features
+bash scripts/test-softhsm.sh        # PKCS#11 provider against SoftHSM (Linux)
 ```
 
 ## Licence

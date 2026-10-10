@@ -131,8 +131,11 @@ version = "0.0.0"
 dependencies = [
  "ic-core",
  "ic-drbg",
+ "ic-ec",
+ "ic-hash",
  "ic-pkix",
  "ic-sig",
+ "ironkeys-pkcs11",
 ]
 
 [[package]]
