@@ -8,7 +8,8 @@ software provider exist and are tested. The PKCS#11 provider signs and agrees
 with keys in a token (tested against SoftHSM), and the TPM 2.0 provider with
 keys wrapped by a TPM (tested against swtpm). The AWS KMS provider signs and
 agrees with keys in KMS (tested against a mock KMS on loopback, not against
-AWS). The Windows CNG provider has not been written. Nothing is published, and
+AWS). The Windows CNG provider signs and agrees with keys persisted in the
+machine's TPM (tested against one Windows TPM). Nothing is published, and
 IronPrivacyGuard still uses its own copies of the code moved here.
 
 ## What is here
@@ -24,6 +25,7 @@ IronPrivacyGuard still uses its own copies of the code moved here.
 | `pkcs11` (feature `pkcs11`) | `Pkcs11Signer` and `Pkcs11KeyAgreement`: P-384 keys that stay in an HSM or token |
 | `tpm2` (feature `tpm2`) | `Tpm2Signer`, `Tpm2KeyAgreement` and `create`: P-384 keys wrapped by a TPM's storage root, kept by the caller as blobs |
 | `kms` (feature `kms`) | `KmsSigner` and `KmsKeyAgreement`: P-384 keys that stay in AWS KMS, named by exact key ARN |
+| `cng` (feature `cng`, Windows) | `CngSigner`, `CngKeyAgreement`, `create` and `delete`: P-384 keys persisted in the TPM by the Microsoft Platform Crypto Provider |
 
 The `ironkeys` crate is `no_std` without its default `std` feature, forbids
 unsafe code, and depends only on IronCrypto (`ic-core`, and `ic-sig` for the
@@ -56,7 +58,10 @@ also be given its endpoint and credentials directly. The bundled roots in
 
 ## What it does not do
 
-- It has no `Signer` or `KeyAgreement` implementation for Windows CNG yet.
+- The CNG provider has been run against one machine's TPM, by hand: CI has
+  no TPM, so its device test runs only when `IRONKEYS_TEST_CNG=1` is set. It
+  covers the Platform Crypto Provider only, not software CNG providers or
+  smart cards.
 - The KMS provider has been run against a mock KMS over plain HTTP on
   loopback. It has not been run against AWS, and its TLS path is exercised
   here only as far as building the configuration; IronPrivacyGuard's tests
@@ -65,11 +70,11 @@ also be given its endpoint and credentials directly. The bundled roots in
   `IRONKEYS_TEST_KMS_AGREEMENT_ARN` are set.
 - The KMS provider does not cache credentials or reuse connections: every
   operation resolves credentials and opens a connection.
-- The PKCS#11, TPM and KMS providers support P-384 only. The first two have
-  been run against SoftHSM and swtpm, not against a hardware HSM or a hardware TPM, and
+- Every provider but the software one supports P-384 only. The PKCS#11 and
+  TPM providers have been run against SoftHSM and swtpm, not against a hardware HSM or a hardware TPM, and
   the TPM provider's Windows storage root has not been run at all.
-- The TPM provider takes the key's auth value as given; deriving it from a PIN
-  is the caller's job.
+- The TPM and CNG providers take the key's auth value as given; deriving it
+  from a PIN is the caller's job.
 - It validates nothing. `Validation` records an operator's declaration; the
   crate cannot check a certificate number against a module, and a provider
   kind never implies validation.

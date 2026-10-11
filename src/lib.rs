@@ -25,9 +25,16 @@
 pub use ic_core::sig::{Custody, SignatureAlgorithm, Signer};
 pub use ic_core::{Error, ErrorKind, Result};
 
+#[cfg(all(feature = "cng", windows))]
+pub mod cng;
 #[cfg(feature = "kms")]
 pub mod kms;
-#[cfg(any(feature = "pkcs11", feature = "tpm2", feature = "kms"))]
+#[cfg(any(
+    feature = "pkcs11",
+    feature = "tpm2",
+    feature = "kms",
+    all(feature = "cng", windows)
+))]
 mod p384;
 #[cfg(feature = "pkcs11")]
 pub mod pkcs11;

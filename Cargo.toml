@@ -38,6 +38,11 @@ ic-ec = { version = ">=0.2.21, <0.3", optional = true }
 ic-hash = { version = ">=0.2.21, <0.3", optional = true }
 ic-pkix = { version = ">=0.2.21, <0.3", optional = true }
 
+# The Windows CNG provider: the native boundary to the Platform Crypto
+# Provider.
+[target.'cfg(windows)'.dependencies]
+ironkeys-cng = { path = "crates/ironkeys-cng", version = "0.0.0", optional = true }
+
 # The software provider's tests build a key and verify what it signs.
 [dev-dependencies]
 ic-pkix = { version = ">=0.2.21, <0.3" }
@@ -59,6 +64,9 @@ pkcs11 = ["std", "dep:ironkeys-pkcs11", "dep:ic-ec", "dep:ic-hash", "dep:ic-pkix
 tpm2 = ["std", "dep:ironkeys-tpm2", "dep:ic-ec", "dep:ic-hash", "dep:ic-pkix"]
 # The AWS KMS provider: P-384 keys that stay in AWS KMS.
 kms = ["std", "dep:ironkeys-kms", "dep:ic-ec", "dep:ic-hash", "dep:ic-pkix"]
+# The Windows CNG provider: P-384 keys persisted in the machine's TPM by the
+# Platform Crypto Provider. Builds nothing on other systems.
+cng = ["std", "dep:ironkeys-cng", "dep:ic-ec", "dep:ic-hash", "dep:ic-pkix"]
 
 [lints.rust]
 unsafe_code = "forbid"

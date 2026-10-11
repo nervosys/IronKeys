@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added the Windows CNG provider (feature `cng`, Windows only): `CngSigner`,
+  `CngKeyAgreement`, `create` and `delete` for P-384 keys persisted in the
+  TPM by the Microsoft Platform Crypto Provider. The usage authorization is
+  checked when a key is opened. Tested against one Windows TPM.
 - Added the AWS KMS provider (feature `kms`): `KmsSigner` and
   `KmsKeyAgreement` for P-384 keys that stay in KMS. A signature KMS returns
   is checked against the bound public key before it is passed on. Tested

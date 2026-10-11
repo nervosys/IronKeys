@@ -207,6 +207,7 @@ dependencies = [
  "ic-json",
  "ic-pkix",
  "ic-sig",
+ "ironkeys-cng",
  "ironkeys-kms",
  "ironkeys-pkcs11",
  "ironkeys-tpm2",

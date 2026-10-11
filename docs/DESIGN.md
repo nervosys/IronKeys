@@ -77,7 +77,17 @@ Unsafe code is confined to the two FFI crates. Everything is P-384 only today.
      the bound key before it is passed on. Tested against a mock KMS on
      loopback; not run against AWS. Not carried over from IPG: ML-DSA signing
      and the key-file format.
-   - **Windows CNG.** Not written.
+   - **Windows CNG (done).** `cng::CngSigner`, `CngKeyAgreement`,
+     `cng::create` and `cng::delete`, over the Microsoft Platform Crypto
+     Provider. Keys are persisted by name in the provider's storage for the
+     current user. A key must report the algorithm of its role (`ECDSA` or
+     `ECDH`) and a P-384 public key. NCrypt handles are usable from any
+     thread, so there is no worker. Opening a key performs one TPM operation
+     to check the usage authorization: a signature over a fixed string, or an
+     agreement with the curve's base point. Tested against one Windows TPM
+     with `IRONKEYS_TEST_CNG=1`; CI cannot run it. Not carried over from IPG:
+     the PIN-to-authorization derivation, the vendor check against a key
+     file, and attestation.
 5. **AWS KMS client (copied).** `src/kms.rs` is here as `ironkeys-kms`, from
    IPG commit `0e6344d`, with the bundled TLS roots. It differs from IPG's in
    three ways: JSON is read by `ic-json`, the environment variables are
