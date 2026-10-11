@@ -70,9 +70,21 @@ Unsafe code is confined to the two FFI crates. Everything is P-384 only today.
      against swtpm by `scripts/test-swtpm.sh`, under the owner storage root;
      the Windows storage root is untested. Not carried over from IPG: PIN
      stretching and the key-file format.
-   - **Windows CNG, AWS KMS.** Not written.
-5. **AWS KMS.** Move after IPG's KMS client runs on IronSocketLayer, since it
-   needs TLS and a root store.
+   - **AWS KMS (done).** `kms::KmsSigner` and `KmsKeyAgreement`, over the
+     client in `ironkeys-kms`. Keys are named by exact ARN and must be
+     `ECC_NIST_P384` of the right usage. They are `Custody::Service`, so the
+     `Hardware` policy refuses them. A returned signature is verified against
+     the bound key before it is passed on. Tested against a mock KMS on
+     loopback; not run against AWS. Not carried over from IPG: ML-DSA signing
+     and the key-file format.
+   - **Windows CNG.** Not written.
+5. **AWS KMS client (copied).** `src/kms.rs` is here as `ironkeys-kms`, from
+   IPG commit `0e6344d`, with the bundled TLS roots. It differs from IPG's in
+   three ways: JSON is read by `ic-json`, the environment variables are
+   `IRONKEYS_KMS_ENDPOINT` and `IRONKEYS_KMS_FIPS`, and `Client` takes an
+   explicit endpoint and credentials so that a caller, or a test, need not
+   set process environment. Until IPG depends on this crate, a fix to either
+   copy must be made in both, and so must a root-store update.
 6. **IPG adoption.** IPG's `CustodyPolicy` and custody reporting map onto the
    types here.
 
@@ -105,7 +117,13 @@ Each step should leave IPG's full test matrix passing.
 - **Encodings.** `Signer` uses DER `SubjectPublicKeyInfo` keys and DER ECDSA
   signatures. IPG uses raw `r || s`. The adapters convert.
 - **Blocking.** KMS operations are network calls made inside `sign` and
-  `agree`. Callers that cannot block need their own executor.
+  `agree`, each on a new connection with a 30-second timeout, and each
+  resolving credentials again. Callers that cannot block need their own
+  executor. Caching credentials until they expire is not done.
+- **Secrets in parsed JSON.** `ic-json` values are not wiped when dropped, so
+  a parsed credential response or `DeriveSharedSecret` response leaves its
+  strings in freed memory. The raw response buffers are wiped. A wiping
+  parser, or extracting the fields without building a tree, would close this.
 - **Attestation.** TPM key attestation verification is not custody. It could
   live here, in IronPKI, or stay in IPG.
 - **Licence.** AGPL-3.0-or-later matches IPG and IronSocketLayer. Whether a

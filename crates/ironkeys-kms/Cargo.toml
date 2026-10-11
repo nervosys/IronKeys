@@ -1,0 +1,21 @@
+[package]
+name = "ironkeys-kms"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.88"
+license = "AGPL-3.0-or-later"
+description = "An AWS KMS client in safe Rust for IronKeys: credentials, SigV4 and the key operations over IronSocketLayer"
+repository = "https://github.com/nervosys/IronKeys"
+publish = false
+
+[dependencies]
+ic-core = { version = ">=0.2.21, <0.3" }
+ic-ec = { version = ">=0.2.21, <0.3" }
+ic-hash = { version = ">=0.2.21, <0.3" }
+ic-json = { version = ">=0.2.21, <0.3" }
+ic-mac = { version = ">=0.2.21, <0.3" }
+# The TLS 1.3 client the requests travel over.
+ironsocketlayer = { version = "0.4.0" }
+
+[lints.rust]
+unsafe_code = "forbid"

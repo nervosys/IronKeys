@@ -13,7 +13,12 @@ categories = ["cryptography", "no-std"]
 publish = false
 
 [workspace]
-members = ["crates/ironkeys-pkcs11", "crates/ironkeys-cng", "crates/ironkeys-tpm2"]
+members = [
+    "crates/ironkeys-pkcs11",
+    "crates/ironkeys-cng",
+    "crates/ironkeys-tpm2",
+    "crates/ironkeys-kms",
+]
 
 [dependencies]
 # The signing interface and custody classes come from IronCrypto.
@@ -27,6 +32,8 @@ ic-sig = { version = ">=0.2.21, <0.3", default-features = false, optional = true
 ironkeys-pkcs11 = { path = "crates/ironkeys-pkcs11", version = "0.0.0", optional = true }
 # The TPM 2.0 provider: the native command layer with its device transports.
 ironkeys-tpm2 = { path = "crates/ironkeys-tpm2", version = "0.0.0", features = ["device"], optional = true }
+# The AWS KMS provider: the client, with its TLS and bundled roots.
+ironkeys-kms = { path = "crates/ironkeys-kms", version = "0.0.0", optional = true }
 ic-ec = { version = ">=0.2.21, <0.3", optional = true }
 ic-hash = { version = ">=0.2.21, <0.3", optional = true }
 ic-pkix = { version = ">=0.2.21, <0.3", optional = true }
@@ -37,6 +44,9 @@ ic-pkix = { version = ">=0.2.21, <0.3" }
 ic-drbg = { version = ">=0.2.21, <0.3", features = ["std"] }
 ic-ec = { version = ">=0.2.21, <0.3" }
 ic-sig = { version = ">=0.2.21, <0.3" }
+# The KMS provider's tests run a mock KMS that reads the requests.
+ic-json = { version = ">=0.2.21, <0.3" }
+ic-hash = { version = ">=0.2.21, <0.3" }
 
 [features]
 default = ["std"]
@@ -47,6 +57,8 @@ software = ["dep:ic-sig"]
 pkcs11 = ["std", "dep:ironkeys-pkcs11", "dep:ic-ec", "dep:ic-hash", "dep:ic-pkix"]
 # The TPM 2.0 provider: P-384 keys wrapped by a TPM's storage root.
 tpm2 = ["std", "dep:ironkeys-tpm2", "dep:ic-ec", "dep:ic-hash", "dep:ic-pkix"]
+# The AWS KMS provider: P-384 keys that stay in AWS KMS.
+kms = ["std", "dep:ironkeys-kms", "dep:ic-ec", "dep:ic-hash", "dep:ic-pkix"]
 
 [lints.rust]
 unsafe_code = "forbid"

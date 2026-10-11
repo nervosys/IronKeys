@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added the AWS KMS provider (feature `kms`): `KmsSigner` and
+  `KmsKeyAgreement` for P-384 keys that stay in KMS. A signature KMS returns
+  is checked against the bound public key before it is passed on. Tested
+  against a mock KMS on loopback, not against AWS.
+- Copied IronPrivacyGuard's KMS client here as `ironkeys-kms` (IPG commit
+  `0e6344d`): credential chain, SigV4, IronSocketLayer TLS and the bundled
+  roots. Its JSON is read by `ic-json`, its environment variables are
+  `IRONKEYS_KMS_ENDPOINT` and `IRONKEYS_KMS_FIPS`, and a client can be given
+  an endpoint and credentials directly.
 - Device failures in `sign` and `agree` now say whether a retry is safe:
   `ProviderUnavailable` or `ProviderRefused`, from IronCrypto 0.2.24, which is
   now the minimum.
