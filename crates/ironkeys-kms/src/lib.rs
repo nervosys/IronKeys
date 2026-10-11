@@ -18,7 +18,9 @@
 //! credentials, then EC2 instance credentials through IMDSv2.
 //! `IRONKEYS_KMS_FIPS=1` selects the FIPS endpoints and narrows the handshake
 //! to P-384 or P-256 with AES-GCM. `IRONKEYS_KMS_ENDPOINT` overrides the KMS
-//! endpoint for local tests and allows plain HTTP only on loopback.
+//! endpoint for local tests and allows plain HTTP only on loopback. A
+//! [`Client`] can be given each of these directly instead, which takes
+//! precedence over the environment.
 //!
 //! Nothing here is FIPS 140 validated on the client side. AWS's HSMs are; this
 //! client and IronCrypto are not.
@@ -202,7 +204,12 @@ struct Credentials {
 /// Center (SSO) profile with a cached `aws sso login` token, container credentials
 /// (ECS task roles, EKS Pod Identity), then EC2 instance-profile credentials through
 /// IMDSv2.
-fn credentials(region: &str, partition: &str) -> Result<Credentials> {
+fn credentials(
+    region: &str,
+    partition: &str,
+    fips: bool,
+    session: Option<&str>,
+) -> Result<Credentials> {
     let env = |name| std::env::var(name).ok().filter(|v: &String| !v.is_empty());
     if let (Some(access_key), Some(secret)) =
         (env("AWS_ACCESS_KEY_ID"), env("AWS_SECRET_ACCESS_KEY"))
@@ -213,13 +220,13 @@ fn credentials(region: &str, partition: &str) -> Result<Credentials> {
             session_token: env("AWS_SESSION_TOKEN").map(Zeroizing::new),
         });
     }
-    if let Some(credentials) = web_identity_credentials(region, partition)? {
+    if let Some(credentials) = web_identity_credentials(region, partition, fips, session)? {
         return Ok(credentials);
     }
     if let Some(credentials) = shared_file_credentials()? {
         return Ok(credentials);
     }
-    if let Some(credentials) = sso_credentials()? {
+    if let Some(credentials) = sso_credentials(fips)? {
         return Ok(credentials);
     }
     if let Some(credentials) = container_credentials()? {
@@ -333,7 +340,7 @@ fn unix_time(text: &str) -> Option<u64> {
 /// `~/.aws/config` with `sso_account_id`, `sso_role_name` and either an
 /// `sso_session` or legacy `sso_start_url`/`sso_region`. Uses the token cached by
 /// `aws sso login`; IPG never refreshes or creates SSO tokens.
-fn sso_credentials() -> Result<Option<Credentials>> {
+fn sso_credentials(fips: bool) -> Result<Option<Credentials>> {
     let env = |name| std::env::var(name).ok().filter(|v: &String| !v.is_empty());
     let Some(config) = env("AWS_CONFIG_FILE")
         .map(std::path::PathBuf::from)
@@ -462,7 +469,7 @@ fn sso_credentials() -> Result<Option<Credentials>> {
         )
         .into_bytes(),
     );
-    let (status, body) = parse_response(&transport(&endpoint, &request)?)?;
+    let (status, body) = parse_response(&transport(&endpoint, &request, fips)?)?;
     if status == 401 || status == 403 {
         return Err(Error::new(
             "authentication_failed",
@@ -651,7 +658,7 @@ fn http(
     }
     request.push_str("content-length: 0\r\nconnection: close\r\n\r\n");
     let wire = Zeroizing::new(request.into_bytes());
-    parse_response(&exchange(endpoint, &wire, timeout)?)
+    parse_response(&exchange(endpoint, &wire, timeout, fips_env())?)
 }
 
 fn unavailable() -> Error {
@@ -804,7 +811,13 @@ fn endpoint_url(source: &str, value: &str) -> Result<Endpoint> {
     Ok(Endpoint { tls, host, port })
 }
 
-fn endpoint(service: &str, region: &str, partition: &str) -> Result<Endpoint> {
+/// Whether `IRONKEYS_KMS_FIPS=1` asks for FIPS mode. A client set with
+/// [`Client::with_fips`] does not consult it.
+fn fips_env() -> bool {
+    std::env::var("IRONKEYS_KMS_FIPS").is_ok_and(|v| v == "1")
+}
+
+fn endpoint(service: &str, region: &str, partition: &str, fips: bool) -> Result<Endpoint> {
     let variable = if service == "kms" {
         "IRONKEYS_KMS_ENDPOINT"
     } else {
@@ -813,7 +826,6 @@ fn endpoint(service: &str, region: &str, partition: &str) -> Result<Endpoint> {
     if let Some(value) = std::env::var(variable).ok().filter(|v| !v.is_empty()) {
         return endpoint_url(variable, &value);
     }
-    let fips = std::env::var("IRONKEYS_KMS_FIPS").is_ok_and(|v| v == "1");
     let suffix = if partition == "aws-cn" {
         "amazonaws.com.cn"
     } else {
@@ -860,7 +872,12 @@ fn xml_text(xml: &str, tag: &str) -> Option<String> {
 /// Web identity federation (EKS IRSA, CI OIDC): exchange the token in
 /// `AWS_WEB_IDENTITY_TOKEN_FILE` for role credentials with an unsigned STS
 /// AssumeRoleWithWebIdentity call in the key's region.
-fn web_identity_credentials(region: &str, partition: &str) -> Result<Option<Credentials>> {
+fn web_identity_credentials(
+    region: &str,
+    partition: &str,
+    fips: bool,
+    session: Option<&str>,
+) -> Result<Option<Credentials>> {
     let env = |name| std::env::var(name).ok().filter(|v: &String| !v.is_empty());
     let (Some(token_file), Some(role)) = (env("AWS_WEB_IDENTITY_TOKEN_FILE"), env("AWS_ROLE_ARN"))
     else {
@@ -872,14 +889,15 @@ fn web_identity_credentials(region: &str, partition: &str) -> Result<Option<Cred
             .trim()
             .to_string(),
     );
-    let session = env("AWS_ROLE_SESSION_NAME").unwrap_or_else(|| "ironkeys".into());
+    let session =
+        env("AWS_ROLE_SESSION_NAME").unwrap_or_else(|| session.unwrap_or("ironkeys").to_string());
     let body = Zeroizing::new(format!(
         "Action=AssumeRoleWithWebIdentity&Version=2011-06-15&RoleArn={}&RoleSessionName={}&WebIdentityToken={}",
         form(&role),
         form(&session),
         form(&token)
     ));
-    let endpoint = endpoint("sts", region, partition)?;
+    let endpoint = endpoint("sts", region, partition, fips)?;
     let host = endpoint.authority();
     let mut wire = Zeroizing::new(
         format!(
@@ -889,7 +907,7 @@ fn web_identity_credentials(region: &str, partition: &str) -> Result<Option<Cred
         .into_bytes(),
     );
     wire.extend_from_slice(body.as_bytes());
-    let (status, response) = parse_response(&transport(&endpoint, &wire)?)?;
+    let (status, response) = parse_response(&transport(&endpoint, &wire, fips)?)?;
     let xml = Zeroizing::new(String::from_utf8_lossy(&response).into_owned());
     if status != 200 {
         let code = xml_text(&xml, "Code").unwrap_or_default();
@@ -914,8 +932,8 @@ fn web_identity_credentials(region: &str, partition: &str) -> Result<Option<Cred
     }))
 }
 
-fn transport(endpoint: &Endpoint, request: &[u8]) -> Result<Zeroizing<Vec<u8>>> {
-    exchange(endpoint, request, Duration::from_secs(30))
+fn transport(endpoint: &Endpoint, request: &[u8], fips: bool) -> Result<Zeroizing<Vec<u8>>> {
+    exchange(endpoint, request, Duration::from_secs(30), fips)
 }
 
 fn network_error(error: std::io::Error) -> Error {
@@ -949,13 +967,15 @@ fn tls_error(error: std::io::Error) -> Error {
 
 /// The TLS client configuration for AWS endpoints, built once per process:
 /// TLS 1.3 against the bundled public roots, HTTP/1.1, no session resumption.
-/// With `IRONKEYS_KMS_FIPS=1` the handshake is narrowed to P-256/P-384 key exchange
+/// one for each mode. In FIPS mode the handshake is narrowed to P-256/P-384 key exchange
 /// and AES-GCM, matching the FIPS endpoints it then connects to.
-fn tls_config() -> Result<std::sync::Arc<ironsocketlayer::config::ClientConfig>> {
+fn tls_config(fips: bool) -> Result<std::sync::Arc<ironsocketlayer::config::ClientConfig>> {
     use ironsocketlayer::config::{ClientConfig, Profile};
     use ironsocketlayer::enums::{CipherSuite, NamedGroup};
-    static CONFIG: std::sync::OnceLock<std::sync::Arc<ClientConfig>> = std::sync::OnceLock::new();
-    if let Some(config) = CONFIG.get() {
+    static CONFIGS: [std::sync::OnceLock<std::sync::Arc<ClientConfig>>; 2] =
+        [std::sync::OnceLock::new(), std::sync::OnceLock::new()];
+    let slot = &CONFIGS[usize::from(fips)];
+    if let Some(config) = slot.get() {
         return Ok(config.clone());
     }
     let unavailable = |e: ironsocketlayer::Error| {
@@ -966,7 +986,7 @@ fn tls_config() -> Result<std::sync::Arc<ironsocketlayer::config::ClientConfig>>
         .with_alpn(&[b"http/1.1"]);
     // Each connection carries one request; tickets would only be retained state.
     config.tickets = None;
-    if std::env::var("IRONKEYS_KMS_FIPS").is_ok_and(|v| v == "1") {
+    if fips {
         config.common.groups = vec![NamedGroup::Secp384r1, NamedGroup::Secp256r1];
         config.common.suites = vec![
             CipherSuite::TlsAes256GcmSha384,
@@ -974,10 +994,15 @@ fn tls_config() -> Result<std::sync::Arc<ironsocketlayer::config::ClientConfig>>
         ];
         config.initial_key_shares = 1;
     }
-    Ok(CONFIG.get_or_init(|| std::sync::Arc::new(config)).clone())
+    Ok(slot.get_or_init(|| std::sync::Arc::new(config)).clone())
 }
 
-fn exchange(endpoint: &Endpoint, request: &[u8], timeout: Duration) -> Result<Zeroizing<Vec<u8>>> {
+fn exchange(
+    endpoint: &Endpoint,
+    request: &[u8],
+    timeout: Duration,
+    fips: bool,
+) -> Result<Zeroizing<Vec<u8>>> {
     use std::net::ToSocketAddrs;
     let network = network_error;
     let host = endpoint.host.trim_matches(['[', ']']);
@@ -992,9 +1017,13 @@ fn exchange(endpoint: &Endpoint, request: &[u8], timeout: Duration) -> Result<Ze
     let response = if endpoint.tls {
         use ironsocketlayer::stream::{Timeouts, TlsStream};
         use std::io::Read as _;
-        let mut client =
-            TlsStream::connect_with(socket, tls_config()?, host, Timeouts::new(timeout, timeout))
-                .map_err(tls_error)?;
+        let mut client = TlsStream::connect_with(
+            socket,
+            tls_config(fips)?,
+            host,
+            Timeouts::new(timeout, timeout),
+        )
+        .map_err(tls_error)?;
         client.write_all(request).map_err(tls_error)?;
         client.flush().map_err(tls_error)?;
         // A read ends cleanly only at the server's authenticated close_notify,
@@ -1177,16 +1206,21 @@ pub struct Client {
     endpoint: Option<Endpoint>,
     /// Set by [`Client::with_credentials`]; otherwise the credential chain.
     credentials: Option<Credentials>,
+    /// Set by [`Client::with_fips`]; otherwise `IRONKEYS_KMS_FIPS`.
+    fips: Option<bool>,
+    /// Set by [`Client::with_role_session_name`].
+    session: Option<String>,
 }
 impl Client {
     fn call(&self, action: &str, request: Json) -> Result<Json> {
+        let fips = self.fips.unwrap_or_else(fips_env);
         let credentials = match &self.credentials {
             Some(credentials) => credentials.clone(),
-            None => credentials(&self.region, &self.partition)?,
+            None => credentials(&self.region, &self.partition, fips, self.session.as_deref())?,
         };
         let endpoint = match &self.endpoint {
             Some(endpoint) => endpoint.clone(),
-            None => endpoint("kms", &self.region, &self.partition)?,
+            None => endpoint("kms", &self.region, &self.partition, fips)?,
         };
         let body = request.to_string().into_bytes();
         let now = SystemTime::now()
@@ -1226,7 +1260,7 @@ impl Client {
         ));
         let mut wire = Zeroizing::new(request.into_bytes());
         wire.extend_from_slice(&body);
-        let (status, response) = parse_response(&transport(&endpoint, &wire)?)?;
+        let (status, response) = parse_response(&transport(&endpoint, &wire, fips)?)?;
         if status != 200 {
             return Err(kms_error(status, &response));
         }
@@ -1293,7 +1327,64 @@ fn der_signature(der: &[u8]) -> Result<Vec<u8>> {
     Ok([r, s].concat())
 }
 
+/// DER SubjectPublicKeyInfo prefix for an ML-DSA-65 key (id-ml-dsa-65,
+/// 2.16.840.1.101.3.4.3.18, no parameters) followed by the 1952-byte key.
+const MLDSA65_SPKI_PREFIX: [u8; 22] = [
+    0x30, 0x82, 0x07, 0xb2, 0x30, 0x0b, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03,
+    0x12, 0x03, 0x82, 0x07, 0xa1, 0x00,
+];
+const MLDSA65_PUBLIC_KEY_LEN: usize = 1952;
+const MLDSA65_SIGNATURE_LEN: usize = 3309;
+
 impl Client {
+    /// The raw 1952-byte public key of the `ML_DSA_65` `SIGN_VERIFY` key at
+    /// `arn`.
+    pub fn mldsa65_public_key(&self, arn: &str) -> Result<Vec<u8>> {
+        let response = self.call("GetPublicKey", Json::object([("KeyId", Json::str(arn))]))?;
+        if response.at("KeySpec").as_str() != Some("ML_DSA_65") {
+            return Err(Error::new(
+                "mechanism_unsupported",
+                "KMS key is not ML_DSA_65",
+            ));
+        }
+        if response.at("KeyUsage").as_str() != Some("SIGN_VERIFY") {
+            return Err(Error::new(
+                "policy_mismatch",
+                "KMS key usage must be SIGN_VERIFY",
+            ));
+        }
+        let spki = unbase64(response.at("PublicKey").as_str().unwrap_or(""))?;
+        let key = spki
+            .strip_prefix(&MLDSA65_SPKI_PREFIX[..])
+            .filter(|key| key.len() == MLDSA65_PUBLIC_KEY_LEN)
+            .ok_or_else(|| Error::new("provider_error", "Unexpected KMS ML-DSA key encoding"))?;
+        Ok(key.to_vec())
+    }
+
+    /// Sign a FIPS 204 message representative (external mu) with the
+    /// `ML_DSA_65` key at `arn`. The caller computes `mu` from the public
+    /// key, its context and the message; the result is the 3309-byte pure
+    /// ML-DSA-65 signature over that message.
+    pub fn sign_mldsa65_mu(&self, arn: &str, mu: &[u8; 64]) -> Result<Vec<u8>> {
+        let response = self.call(
+            "Sign",
+            Json::object([
+                ("KeyId", Json::str(arn)),
+                ("Message", Json::str(base64(mu))),
+                ("MessageType", Json::str("EXTERNAL_MU")),
+                ("SigningAlgorithm", Json::str("ML_DSA_SHAKE_256")),
+            ]),
+        )?;
+        let signature = unbase64(response.at("Signature").as_str().unwrap_or(""))?;
+        if signature.len() != MLDSA65_SIGNATURE_LEN {
+            return Err(Error::new(
+                "provider_error",
+                "KMS returned an unexpected ML-DSA signature length",
+            ));
+        }
+        Ok(signature)
+    }
+
     /// A client for the region and partition of `arn`.
     pub fn for_key(arn: &str) -> Result<Self> {
         let parsed = parse_arn(arn)?;
@@ -1302,7 +1393,25 @@ impl Client {
             partition: parsed.partition,
             endpoint: None,
             credentials: None,
+            fips: None,
+            session: None,
         })
+    }
+
+    /// Turn FIPS mode on or off for this client, whatever `IRONKEYS_KMS_FIPS`
+    /// says: the `kms-fips` and `sts-fips` endpoints, and a handshake
+    /// narrowed to P-384 or P-256 with AES-GCM. This selects endpoints and
+    /// algorithms; it does not make this client a validated module.
+    pub fn with_fips(mut self, fips: bool) -> Self {
+        self.fips = Some(fips);
+        self
+    }
+
+    /// The role session name for web identity federation when
+    /// `AWS_ROLE_SESSION_NAME` is not set. The default is `ironkeys`.
+    pub fn with_role_session_name(mut self, name: &str) -> Self {
+        self.session = Some(name.into());
+        self
     }
 
     /// Send requests to `url` (`http(s)://host[:port]`) instead of the
@@ -1411,6 +1520,56 @@ mod tests {
     fn tls_configuration_accepts_bundled_roots() {
         // The real bundled data; no test verifier or custom roots are installed.
         assert_eq!(tls_roots::root_store().unwrap().len(), 121);
+    }
+
+    #[test]
+    fn fips_mode_selects_fips_endpoints_and_a_narrowed_handshake() {
+        use ironsocketlayer::enums::{CipherSuite, NamedGroup};
+        // Skipped when the environment overrides the endpoints under test.
+        if ["IRONKEYS_KMS_ENDPOINT", "AWS_ENDPOINT_URL_STS"]
+            .iter()
+            .any(|name| std::env::var(name).is_ok_and(|v| !v.is_empty()))
+        {
+            return;
+        }
+        let host = |service, region, partition, fips| {
+            endpoint(service, region, partition, fips).unwrap().host
+        };
+        assert_eq!(
+            host("kms", "us-east-1", "aws", false),
+            "kms.us-east-1.amazonaws.com"
+        );
+        assert_eq!(
+            host("kms", "us-east-1", "aws", true),
+            "kms-fips.us-east-1.amazonaws.com"
+        );
+        assert_eq!(
+            host("sts", "us-gov-west-1", "aws-us-gov", true),
+            "sts-fips.us-gov-west-1.amazonaws.com"
+        );
+        assert_eq!(
+            host("kms", "cn-north-1", "aws-cn", false),
+            "kms.cn-north-1.amazonaws.com.cn"
+        );
+        // Each mode has its own configuration; one does not leak into the other.
+        let narrowed = tls_config(true).unwrap();
+        assert_eq!(
+            narrowed.common.groups,
+            [NamedGroup::Secp384r1, NamedGroup::Secp256r1]
+        );
+        assert_eq!(
+            narrowed.common.suites,
+            [
+                CipherSuite::TlsAes256GcmSha384,
+                CipherSuite::TlsAes128GcmSha256
+            ]
+        );
+        let default = tls_config(false).unwrap();
+        assert_ne!(default.common.groups, narrowed.common.groups);
+        assert_eq!(
+            tls_config(true).unwrap().common.groups,
+            narrowed.common.groups
+        );
     }
 
     #[test]

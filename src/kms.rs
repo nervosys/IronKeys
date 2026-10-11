@@ -254,6 +254,8 @@ mod tests {
         "arn:aws:kms:us-east-1:111122223333:key/33333333-3333-3333-3333-333333333333";
     const DENIED: &str =
         "arn:aws:kms:us-east-1:111122223333:key/44444444-4444-4444-4444-444444444444";
+    const MLDSA: &str =
+        "arn:aws:kms:us-east-1:111122223333:key/55555555-5555-5555-5555-555555555555";
     const MESSAGE: &[u8] = b"held in KMS";
 
     fn scalar(last: u8) -> [u8; 48] {
@@ -308,6 +310,27 @@ mod tests {
             (200, format!("{{{}}}", fields.join(",")))
         };
         match action {
+            "TrentService.GetPublicKey" if key == MLDSA => {
+                // id-ml-dsa-65 SubjectPublicKeyInfo around a 1952-byte key.
+                let mut spki = vec![
+                    0x30, 0x82, 0x07, 0xb2, 0x30, 0x0b, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65,
+                    0x03, 0x04, 0x03, 0x12, 0x03, 0x82, 0x07, 0xa1, 0x00,
+                ];
+                spki.extend_from_slice(&[0x6b; 1952]);
+                json(&[
+                    ("KeySpec", "ML_DSA_65".into()),
+                    ("KeyUsage", "SIGN_VERIFY".into()),
+                    ("PublicKey", b64(&spki)),
+                ])
+            }
+            "TrentService.Sign" if key == MLDSA => {
+                assert_eq!(member(body, "MessageType"), "EXTERNAL_MU");
+                assert_eq!(member(body, "SigningAlgorithm"), "ML_DSA_SHAKE_256");
+                assert_eq!(unb64(&member(body, "Message")).unwrap(), [0x3c; 64]);
+                // The mock does not hold an ML-DSA key: the client's handling
+                // of the call is under test, not the signature.
+                json(&[("Signature", b64(&[0x7e; 3309]))])
+            }
             "TrentService.GetPublicKey" => {
                 let (spec, usage, scalar) = match key.as_str() {
                     SIGNING => ("ECC_NIST_P384", "SIGN_VERIFY", scalar(1)),
@@ -632,6 +655,33 @@ mod tests {
             !denied.message.contains("111122223333"),
             "{}",
             denied.message
+        );
+    }
+
+    #[test]
+    fn the_client_fetches_and_signs_with_an_ml_dsa_key() {
+        let (url, seen) = mock();
+        let client = client(&url, MLDSA).with_fips(false);
+        assert_eq!(client.mldsa65_public_key(MLDSA).unwrap(), [0x6b; 1952]);
+        assert_eq!(
+            client.sign_mldsa65_mu(MLDSA, &[0x3c; 64]).unwrap(),
+            [0x7e; 3309]
+        );
+        assert_eq!(
+            seen.lock().unwrap().requests.last().unwrap().0,
+            "TrentService.Sign"
+        );
+        // An ML-DSA key is not a P-384 key, and a P-384 key is not an ML-DSA one.
+        assert_eq!(
+            client
+                .p384_public_point(MLDSA, "SIGN_VERIFY")
+                .unwrap_err()
+                .code,
+            "mechanism_unsupported"
+        );
+        assert_eq!(
+            client.mldsa65_public_key(SIGNING).unwrap_err().code,
+            "mechanism_unsupported"
         );
     }
 

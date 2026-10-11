@@ -1,6 +1,6 @@
 # TLS trust-anchor data
 
-`tls-roots.json` is IronPrivacyGuard's `data/tls-roots.json` at commit
+`tls-roots.json` came from IronPrivacyGuard's `data/tls-roots.json` at commit
 `0e6344d`, byte for byte: public Mozilla trust-anchor data imported from the
 `webpki-roots` 1.0.9 release, 121 roots, one with a name constraint. It is
 distributed under the accompanying `tls-roots.LICENSE` (CDLA-Permissive-2.0).
@@ -16,13 +16,19 @@ compiled `webpki-roots` 1.0.9 store.
 
 ## Updating
 
-The importer is IronPrivacyGuard's `scripts/import-tls-roots.py`, which
-verifies the archive's pinned SHA-256 digest before reading it. A root update
+Reproduce or check the import without network access, from the repository
+root:
+
+```text
+python scripts/import-tls-roots.py /path/to/webpki-roots-1.0.9.crate --check
+```
+
+The importer verifies the archive's pinned SHA-256 digest before reading it.
+It never executes archive code or extracts archive paths. A root update
 requires deliberate review of the new release, archive pin, additions,
-removals, constraints and licence. Make it in IronPrivacyGuard, then copy the
-data and licence here and update the loader's provenance checks and the digest
-test in `src/tls_roots.rs`. Until IronPrivacyGuard depends on this crate, the
-two copies must be kept the same by hand.
+removals, constraints and licence; then update the importer, the loader's
+provenance checks, the digest test in `src/tls_roots.rs` and this document
+together. Removing `--check` writes the reviewed data and licence.
 
 This static set does not follow OS root-store changes, enterprise roots or
 platform revocation policy, and it does not refresh itself.

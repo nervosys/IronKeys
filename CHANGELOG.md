@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.1
+
+Changes `ironkeys` and `ironkeys-kms`; the other crates stay at 0.1.0.
+
+- `ironkeys-kms`: `Client::with_fips` sets FIPS mode for one client whatever
+  `IRONKEYS_KMS_FIPS` says, and `Client::with_role_session_name` sets the web
+  identity session name. Each mode has its own TLS configuration.
+- `ironkeys-kms`: `Client::mldsa65_public_key` and `Client::sign_mldsa65_mu`,
+  for `ML_DSA_65` keys signing a FIPS 204 external mu. The `ironkeys`
+  interface does not offer ML-DSA through KMS yet.
+- `scripts/import-tls-roots.py`, the importer for the bundled TLS roots, moved
+  here from IronPrivacyGuard.
+
 ## 0.1.0
 
 The first published release.
