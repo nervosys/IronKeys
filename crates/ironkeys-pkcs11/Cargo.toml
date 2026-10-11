@@ -1,12 +1,14 @@
 [package]
 name = "ironkeys-pkcs11"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
 license = "AGPL-3.0-or-later"
 description = "Native PKCS#11 boundary for IronKeys"
 repository = "https://github.com/nervosys/IronKeys"
-publish = false
+readme = "README.md"
+keywords = ["cryptography", "ironsecurity"]
+categories = ["cryptography"]
 
 [dependencies]
 ic-core = { version = ">=0.2.21, <0.3" }

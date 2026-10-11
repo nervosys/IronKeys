@@ -198,7 +198,7 @@ dependencies = [
 
 [[package]]
 name = "ironkeys"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ic-core",
  "ic-drbg",
@@ -215,7 +215,7 @@ dependencies = [
 
 [[package]]
 name = "ironkeys-cng"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ic-core",
  "ic-ec",
@@ -224,7 +224,7 @@ dependencies = [
 
 [[package]]
 name = "ironkeys-kms"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ic-core",
  "ic-ec",
@@ -236,14 +236,14 @@ dependencies = [
 
 [[package]]
 name = "ironkeys-pkcs11"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ic-core",
 ]
 
 [[package]]
 name = "ironkeys-tpm2"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ic-cipher",
  "ic-core",

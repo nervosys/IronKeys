@@ -1,12 +1,14 @@
 [package]
 name = "ironkeys-kms"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
 license = "AGPL-3.0-or-later"
 description = "An AWS KMS client in safe Rust for IronKeys: credentials, SigV4 and the key operations over IronSocketLayer"
 repository = "https://github.com/nervosys/IronKeys"
-publish = false
+readme = "README.md"
+keywords = ["cryptography", "ironsecurity"]
+categories = ["cryptography"]
 
 [dependencies]
 ic-core = { version = ">=0.2.21, <0.3" }

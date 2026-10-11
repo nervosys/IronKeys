@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.1.0
+
+The first published release.
 
 - IronKeys is dual-licensed: AGPL-3.0-or-later, with a commercial licence
   available from NERVOSYS. Added `LICENSE-COMMERCIAL.md`, `CLA.md` and

@@ -9,8 +9,8 @@ with keys in a token (tested against SoftHSM), and the TPM 2.0 provider with
 keys wrapped by a TPM (tested against swtpm). The AWS KMS provider signs and
 agrees with keys in KMS (tested against a mock KMS on loopback, not against
 AWS). The Windows CNG provider signs and agrees with keys persisted in the
-machine's TPM (tested against one Windows TPM). Nothing is published, and
-IronPrivacyGuard still uses its own copies of the code moved here.
+machine's TPM (tested against one Windows TPM). IronPrivacyGuard still uses
+its own copies of the code moved here.
 
 ## What is here
 

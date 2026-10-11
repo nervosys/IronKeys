@@ -1,6 +1,6 @@
 [package]
 name = "ironkeys"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
 license = "AGPL-3.0-or-later"
@@ -9,8 +9,6 @@ repository = "https://github.com/nervosys/IronKeys"
 readme = "README.md"
 keywords = ["cryptography", "hsm", "pkcs11", "tpm", "kms"]
 categories = ["cryptography", "no-std"]
-# A scaffold: not for publication until the backends are extracted.
-publish = false
 
 [workspace]
 members = [
@@ -29,11 +27,11 @@ ic-core = { version = ">=0.2.24, <0.3", default-features = false }
 ic-sig = { version = ">=0.2.21, <0.3", default-features = false, optional = true }
 # The PKCS#11 provider: the native boundary, and IronCrypto for the digest,
 # point validation and signature encoding around it.
-ironkeys-pkcs11 = { path = "crates/ironkeys-pkcs11", version = "0.0.0", optional = true }
+ironkeys-pkcs11 = { path = "crates/ironkeys-pkcs11", version = "0.1.0", optional = true }
 # The TPM 2.0 provider: the native command layer with its device transports.
-ironkeys-tpm2 = { path = "crates/ironkeys-tpm2", version = "0.0.0", features = ["device"], optional = true }
+ironkeys-tpm2 = { path = "crates/ironkeys-tpm2", version = "0.1.0", features = ["device"], optional = true }
 # The AWS KMS provider: the client, with its TLS and bundled roots.
-ironkeys-kms = { path = "crates/ironkeys-kms", version = "0.0.0", optional = true }
+ironkeys-kms = { path = "crates/ironkeys-kms", version = "0.1.0", optional = true }
 ic-ec = { version = ">=0.2.21, <0.3", optional = true }
 ic-hash = { version = ">=0.2.21, <0.3", optional = true }
 ic-pkix = { version = ">=0.2.21, <0.3", optional = true }
@@ -41,7 +39,7 @@ ic-pkix = { version = ">=0.2.21, <0.3", optional = true }
 # The Windows CNG provider: the native boundary to the Platform Crypto
 # Provider.
 [target.'cfg(windows)'.dependencies]
-ironkeys-cng = { path = "crates/ironkeys-cng", version = "0.0.0", optional = true }
+ironkeys-cng = { path = "crates/ironkeys-cng", version = "0.1.0", optional = true }
 
 # The software provider's tests build a key and verify what it signs.
 [dev-dependencies]

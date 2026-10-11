@@ -1,13 +1,15 @@
 [package]
 name = "ironkeys-cng"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2024"
 # As in IronPrivacyGuard's ipg-cng, from which this code is moved unchanged.
 rust-version = "1.87"
 license = "AGPL-3.0-or-later"
 description = "Minimal safe wrapper over Windows CNG and TPM Base Services for IronKeys"
 repository = "https://github.com/nervosys/IronKeys"
-publish = false
+readme = "README.md"
+keywords = ["cryptography", "ironsecurity"]
+categories = ["cryptography"]
 
 [dev-dependencies]
 ic-core = { version = ">=0.2.21, <0.3" }
