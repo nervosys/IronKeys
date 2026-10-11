@@ -62,7 +62,15 @@ Unsafe code is confined to the two FFI crates. Everything is P-384 only today.
      P-384, sensitive and non-extractable. Tested against SoftHSM by
      `scripts/test-softhsm.sh`. Not carried over from IPG: in-token envelope
      decryption (`open_in_device`), which follows IPG's envelope layout.
-   - **TPM 2.0, Windows CNG, AWS KMS.** Not written.
+   - **TPM 2.0 (done).** `tpm2::Tpm2Signer`, `Tpm2KeyAgreement` and
+     `tpm2::create`. Keys are TPM-wrapped blobs the caller stores; nothing
+     persists in the TPM. A blob must be created in the TPM, fixed to it and
+     its parent, and of the right role. Each key owns a worker thread with its
+     TPM connection, and its auth value is checked when it is opened. Tested
+     against swtpm by `scripts/test-swtpm.sh`, under the owner storage root;
+     the Windows storage root is untested. Not carried over from IPG: PIN
+     stretching and the key-file format.
+   - **Windows CNG, AWS KMS.** Not written.
 5. **AWS KMS.** Move after IPG's KMS client runs on IronSocketLayer, since it
    needs TLS and a root store.
 6. **IPG adoption.** IPG's `CustodyPolicy` and custody reporting map onto the

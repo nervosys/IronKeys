@@ -33,14 +33,6 @@ use std::sync::mpsc::{Sender, channel};
 /// DER OBJECT IDENTIFIER 1.3.132.0.34 (secp384r1), the CKA_EC_PARAMS value.
 const P384_PARAMS: [u8; 7] = [0x06, 0x05, 0x2b, 0x81, 0x04, 0x00, 0x22];
 
-/// The DER `SubjectPublicKeyInfo` header of a P-384 key: the algorithm
-/// identifier (id-ecPublicKey, secp384r1) and the BIT STRING header that the
-/// 97-byte uncompressed point follows.
-const P384_SPKI_HEADER: [u8; 23] = [
-    0x30, 0x76, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, 0x06, 0x05, 0x2b,
-    0x81, 0x04, 0x00, 0x22, 0x03, 0x62, 0x00,
-];
-
 /// Why a token key could not be opened.
 #[derive(Debug)]
 #[non_exhaustive]
@@ -202,7 +194,7 @@ fn public_point(session: &Session, id: &[u8]) -> std::result::Result<[u8; 97], O
     let point: [u8; 97] = point
         .try_into()
         .map_err(|_| OpenError::Refused("the public key is not an uncompressed P-384 point"))?;
-    if point[0] != 0x04 || ic_ec::p384::AffinePoint::from_sec1(&point).is_none() {
+    if !crate::p384::on_curve(&point) {
         return Err(OpenError::Refused("the public key is not a point on P-384"));
     }
     Ok(point)
@@ -368,13 +360,6 @@ fn start(
     ))
 }
 
-fn spki(point: &[u8; 97]) -> [u8; 120] {
-    let mut out = [0u8; 120];
-    out[..23].copy_from_slice(&P384_SPKI_HEADER);
-    out[23..].copy_from_slice(point);
-    out
-}
-
 /// A P-384 signing key held in a PKCS#11 token.
 pub struct Pkcs11Signer {
     worker: Worker,
@@ -396,7 +381,7 @@ impl Pkcs11Signer {
         let (worker, point) = start(location, pin, AttributeType::Sign, provider, policy)?;
         Ok(Self {
             worker,
-            spki: spki(&point),
+            spki: crate::p384::spki(&point),
         })
     }
 }
@@ -465,7 +450,7 @@ impl Pkcs11KeyAgreement {
         let (worker, point) = start(location, pin, AttributeType::Derive, provider, policy)?;
         Ok(Self {
             worker,
-            spki: spki(&point),
+            spki: crate::p384::spki(&point),
         })
     }
 }
@@ -490,18 +475,7 @@ impl KeyAgreement for Pkcs11KeyAgreement {
                 "shared-secret buffer is too short",
             ));
         }
-        let peer: [u8; 97] = peer_public.try_into().map_err(|_| {
-            Error::new(
-                ErrorKind::InvalidParameter,
-                "peer key is not an uncompressed P-384 point",
-            )
-        })?;
-        if peer[0] != 0x04 || ic_ec::p384::AffinePoint::from_sec1(&peer).is_none() {
-            return Err(Error::new(
-                ErrorKind::InvalidParameter,
-                "peer key is not a point on P-384",
-            ));
-        }
+        let peer = crate::p384::point(peer_public)?;
         let mut shared = ic_core::Zeroizing::new(self.worker.call(Job::Agree(peer))?);
         if shared.len() != 48 {
             return Err(Error::new(
@@ -520,26 +494,6 @@ mod tests {
     use super::*;
     use crate::Validation;
     use ic_core::traits::KeyAgreement as _;
-
-    #[test]
-    fn the_spki_header_wraps_a_p384_point() {
-        let mut scalar = [0u8; 48];
-        scalar[47] = 7;
-        let mut point = [0u8; 97];
-        ic_ec::EcdhP384::public_key(&scalar, &mut point).unwrap();
-        let der = spki(&point);
-        // IronCrypto reads it back as the same key.
-        match ic_pkix::PublicKeyInfo::from_der(&der).unwrap() {
-            ic_pkix::PublicKeyInfo::Ec {
-                algorithm,
-                point: p,
-            } => {
-                assert_eq!(algorithm, ic_pkix::KeyAlgorithm::EcP384);
-                assert_eq!(p, &point[..]);
-            }
-            _ => panic!("not an EC key"),
-        }
-    }
 
     #[test]
     fn a_policy_or_provider_mismatch_is_refused_before_the_module_loads() {

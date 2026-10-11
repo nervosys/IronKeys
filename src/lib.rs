@@ -25,10 +25,14 @@
 pub use ic_core::sig::{Custody, SignatureAlgorithm, Signer};
 pub use ic_core::{Error, ErrorKind, Result};
 
+#[cfg(any(feature = "pkcs11", feature = "tpm2"))]
+mod p384;
 #[cfg(feature = "pkcs11")]
 pub mod pkcs11;
 #[cfg(feature = "software")]
 pub mod software;
+#[cfg(feature = "tpm2")]
+pub mod tpm2;
 
 /// A key-agreement algorithm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

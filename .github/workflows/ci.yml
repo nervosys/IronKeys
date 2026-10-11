@@ -26,3 +26,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: sudo apt-get update && sudo apt-get install -y softhsm2
       - run: bash scripts/test-softhsm.sh
+  swtpm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y swtpm swtpm-tools
+      - run: bash scripts/test-swtpm.sh

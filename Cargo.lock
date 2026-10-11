@@ -136,6 +136,7 @@ dependencies = [
  "ic-pkix",
  "ic-sig",
  "ironkeys-pkcs11",
+ "ironkeys-tpm2",
 ]
 
 [[package]]
