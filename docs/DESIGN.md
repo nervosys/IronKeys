@@ -96,11 +96,12 @@ Each step should leave IPG's full test matrix passing.
   keys may need P-256, RSA or Ed25519. Which are required first?
 - **Errors.** Opening a key returns a provider error (`pkcs11::OpenError`
   carries the PKCS#11 return value and function). `Signer::sign` and
-  `KeyAgreement::agree` must return IronCrypto's `Error`, whose kinds have
-  none for "the device refused or failed": the PKCS#11 provider reports an
-  unavailable mechanism as `Unsupported` and every other device failure as
-  `InvalidParameter`, which loses the return value. A device-failure kind in
-  IronCrypto, or a status accessor here, would fix that.
+  `KeyAgreement::agree` return IronCrypto's `Error`. From IronCrypto 0.2.24
+  the providers report `ProviderUnavailable` when the device could not be
+  reached or could not answer (a retry may succeed), `ProviderRefused` when it
+  answered no or the failure cannot be classified (never retried, since
+  retrying a refusal is how a token or TPM gets locked), and `Unsupported`
+  for a missing mechanism. The device's own status code is not carried.
 - **Encodings.** `Signer` uses DER `SubjectPublicKeyInfo` keys and DER ECDSA
   signatures. IPG uses raw `r || s`. The adapters convert.
 - **Blocking.** KMS operations are network calls made inside `sign` and

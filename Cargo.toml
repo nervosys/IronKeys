@@ -17,7 +17,9 @@ members = ["crates/ironkeys-pkcs11", "crates/ironkeys-cng", "crates/ironkeys-tpm
 
 [dependencies]
 # The signing interface and custody classes come from IronCrypto.
-ic-core = { version = ">=0.2.21, <0.3", default-features = false }
+# 0.2.24 is the first release with the ProviderUnavailable and
+# ProviderRefused error kinds the device providers report.
+ic-core = { version = ">=0.2.24, <0.3", default-features = false }
 # In-memory keys: IronCrypto's signer, first released in 0.2.21.
 ic-sig = { version = ">=0.2.21, <0.3", default-features = false, optional = true }
 # The PKCS#11 provider: the native boundary, and IronCrypto for the digest,

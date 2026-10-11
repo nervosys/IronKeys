@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Device failures in `sign` and `agree` now say whether a retry is safe:
+  `ProviderUnavailable` or `ProviderRefused`, from IronCrypto 0.2.24, which is
+  now the minimum.
 - Added the TPM 2.0 provider (feature `tpm2`): `Tpm2Signer`,
   `Tpm2KeyAgreement` and `create` for P-384 keys wrapped by a TPM's storage
   root. Tested against swtpm.

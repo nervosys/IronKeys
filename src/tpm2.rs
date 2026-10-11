@@ -193,26 +193,43 @@ struct Worker {
 
 impl Worker {
     fn call(&self, job: Job) -> Result<Vec<u8>> {
-        let gone = || Error::new(ErrorKind::Internal, "tpm worker is not running");
+        let gone = || {
+            Error::new(
+                ErrorKind::ProviderRefused,
+                "the TPM worker is not running; open the key again",
+            )
+        };
         let (reply, answer) = channel();
         self.jobs
             .lock()
             .map_err(|_| gone())?
             .send((job, reply))
             .map_err(|_| gone())?;
-        answer.recv().map_err(|_| gone())?.map_err(|error| {
-            if error.code == "mechanism_unsupported" {
-                Error::new(
-                    ErrorKind::Unsupported,
-                    "the TPM does not offer the mechanism",
-                )
-            } else {
-                Error::new(
-                    ErrorKind::InvalidParameter,
-                    "the TPM refused or failed the operation",
-                )
-            }
-        })
+        answer
+            .recv()
+            .map_err(|_| gone())?
+            .map_err(|e| device_error(&e))
+    }
+}
+
+/// A TPM failure as the shared interface expresses it: `Unsupported` for a
+/// missing mechanism, `ProviderUnavailable` when the TPM could not be reached
+/// or the layer marks the failure retryable, and `ProviderRefused` otherwise
+/// (a wrong auth value, a lockout, a policy). Refusals are not retryable:
+/// retrying one is how a TPM gets locked out.
+fn device_error(error: &Tpm2Error) -> Error {
+    if error.code == "mechanism_unsupported" {
+        Error::new(
+            ErrorKind::Unsupported,
+            "the TPM does not offer the mechanism",
+        )
+    } else if error.retryable || matches!(error.code, "provider_unavailable" | "io_error") {
+        Error::new(
+            ErrorKind::ProviderUnavailable,
+            "the TPM could not be reached or could not answer",
+        )
+    } else {
+        Error::new(ErrorKind::ProviderRefused, "the TPM refused the operation")
     }
 }
 
@@ -503,6 +520,27 @@ mod tests {
     use ic_core::traits::KeyAgreement as _;
 
     const AUTH: &[u8] = b"public test auth value, 32 bytes";
+
+    #[test]
+    fn tpm_failures_say_whether_a_retry_is_safe() {
+        let kind = |code| device_error(&Tpm2Error::new(code, "x")).kind();
+        assert_eq!(kind("mechanism_unsupported"), ErrorKind::Unsupported);
+        for code in ["provider_unavailable", "io_error"] {
+            assert_eq!(kind(code), ErrorKind::ProviderUnavailable);
+            assert!(kind(code).retryable());
+        }
+        // A wrong auth value or a lockout must not be retried.
+        for code in ["authentication_failed", "pin_locked", "provider_error"] {
+            assert_eq!(kind(code), ErrorKind::ProviderRefused);
+            assert!(!kind(code).retryable());
+        }
+        let mut transient = Tpm2Error::new("provider_error", "x");
+        transient.retryable = true;
+        assert_eq!(
+            device_error(&transient).kind(),
+            ErrorKind::ProviderUnavailable
+        );
+    }
 
     #[test]
     fn a_policy_or_provider_mismatch_is_refused_before_the_tpm_is_reached() {

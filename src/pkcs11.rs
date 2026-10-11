@@ -114,7 +114,12 @@ struct Worker {
 
 impl Worker {
     fn call(&self, job: Job) -> Result<Vec<u8>> {
-        let gone = || Error::new(ErrorKind::Internal, "pkcs11 worker is not running");
+        let gone = || {
+            Error::new(
+                ErrorKind::ProviderRefused,
+                "the pkcs11 worker is not running; open the key again",
+            )
+        };
         let (reply, answer) = channel();
         self.jobs
             .lock()
@@ -125,18 +130,30 @@ impl Worker {
     }
 }
 
-/// A token failure as the shared interface can express it. Return values that
-/// say the mechanism is unavailable are `Unsupported`; everything else the
-/// token refuses is `InvalidParameter`.
+/// A token failure as the shared interface expresses it.
+///
+/// - `Unsupported`: the token lacks the mechanism.
+/// - `ProviderUnavailable`: the token could not be reached or could not
+///   answer (device error, removed token, lost session). A retry may succeed.
+/// - `ProviderRefused`: the token answered no, or the failure is of a kind
+///   this cannot classify. Not retryable: retrying a refusal is how a token
+///   gets locked.
 fn device_error(error: CkError) -> Error {
     match error {
         CkError::Pkcs11(0x70 | 0x71 | 0x130 | 0x140 | 0x62, _) => Error::new(
             ErrorKind::Unsupported,
             "the pkcs11 token does not offer the mechanism",
         ),
+        // CKR_HOST_MEMORY, GENERAL_ERROR, DEVICE_ERROR, DEVICE_MEMORY,
+        // DEVICE_REMOVED, SESSION_CLOSED, SESSION_HANDLE_INVALID,
+        // TOKEN_NOT_PRESENT.
+        CkError::Pkcs11(0x02 | 0x05 | 0x30 | 0x31 | 0x32 | 0xb0 | 0xb3 | 0xe0, _) => Error::new(
+            ErrorKind::ProviderUnavailable,
+            "the pkcs11 token could not be reached or could not answer",
+        ),
         _ => Error::new(
-            ErrorKind::InvalidParameter,
-            "the pkcs11 token refused or failed the operation",
+            ErrorKind::ProviderRefused,
+            "the pkcs11 token refused the operation",
         ),
     }
 }
@@ -494,6 +511,28 @@ mod tests {
     use super::*;
     use crate::Validation;
     use ic_core::traits::KeyAgreement as _;
+
+    #[test]
+    fn token_failures_say_whether_a_retry_is_safe() {
+        let kind = |rv| device_error(CkError::Pkcs11(rv, "C_Sign")).kind();
+        // CKR_MECHANISM_INVALID.
+        assert_eq!(kind(0x70), ErrorKind::Unsupported);
+        // CKR_DEVICE_ERROR and CKR_SESSION_HANDLE_INVALID may pass on a retry.
+        for rv in [0x30, 0xb3, 0xe0] {
+            assert_eq!(kind(rv), ErrorKind::ProviderUnavailable);
+            assert!(kind(rv).retryable());
+        }
+        // CKR_PIN_EXPIRED, CKR_PIN_LOCKED, CKR_USER_NOT_LOGGED_IN, and anything
+        // unclassified, must not be retried.
+        for rv in [0xa3, 0xa4, 0x101, 0x9999] {
+            assert_eq!(kind(rv), ErrorKind::ProviderRefused);
+            assert!(!kind(rv).retryable());
+        }
+        assert_eq!(
+            device_error(CkError::Invalid("x")).kind(),
+            ErrorKind::ProviderRefused
+        );
+    }
 
     #[test]
     fn a_policy_or_provider_mismatch_is_refused_before_the_module_loads() {
