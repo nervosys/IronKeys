@@ -136,8 +136,6 @@ Each step should leave IPG's full test matrix passing.
   parser, or extracting the fields without building a tree, would close this.
 - **Attestation.** TPM key attestation verification is not custody. It could
   live here, in IronPKI, or stay in IPG.
-- **Licence.** AGPL-3.0-or-later matches IPG and IronSocketLayer. Whether a
-  commercial licence is offered is the maintainer's decision.
 - **Validated-module data.** `Validation` holds an operator's declaration.
   Whether IronKeys should also ship a list of known CMVP certificates, and who
   maintains it, is undecided.

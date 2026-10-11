@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- IronKeys is dual-licensed: AGPL-3.0-or-later, with a commercial licence
+  available from NERVOSYS. Added `LICENSE-COMMERCIAL.md`, `CLA.md` and
+  `CONTRIBUTING.md`.
 - Added the Windows CNG provider (feature `cng`, Windows only): `CngSigner`,
   `CngKeyAgreement`, `create` and `delete` for P-384 keys persisted in the
   TPM by the Microsoft Platform Crypto Provider. The usage authorization is

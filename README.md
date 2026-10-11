@@ -99,6 +99,8 @@ bash scripts/test-swtpm.sh          # TPM 2.0 provider against swtpm (Linux)
 
 ## Licence
 
-AGPL-3.0-or-later; see [LICENSE](LICENSE). The other IronSecurity projects also
-offer a commercial licence; whether IronKeys does is the maintainer's decision
-and is not stated here.
+AGPL-3.0-or-later; see [LICENSE](LICENSE). A commercial licence is available
+from NERVOSYS: see [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md).
+Contributions require agreement to the [CLA](CLA.md); see
+[CONTRIBUTING.md](CONTRIBUTING.md). The bundled TLS trust-anchor data is under
+[CDLA-Permissive-2.0](crates/ironkeys-kms/data/tls-roots.LICENSE).
