@@ -1,0 +1,51 @@
+{
+  "schema": "ironsecurity-controls/1",
+  "project": "IronKeys",
+  "description": "Key custody for the IronSecurity stack: one interface over private keys held in software, a PKCS#11 token or HSM, a TPM 2.0, Windows CNG or AWS KMS, with a policy for which of those a host accepts. A library; it is not an information system.",
+  "version": "0.1.2",
+  "fipsValidated": false,
+  "controls": [
+    {
+      "framework": "sp800-53",
+      "id": "SC-12",
+      "title": "Cryptographic Key Establishment and Management",
+      "bearing": "IronKeys is how a caller reaches a private key wherever it is kept, and its custody policy decides whether a host accepts software keys, only non-exportable keys, only local hardware, or only providers whose operator declares a FIPS 140 validation.",
+      "compliance": {
+        "state": "partial",
+        "evidence": ["src/lib.rs", "docs/DESIGN.md", "scripts/test-softhsm.sh", "scripts/test-swtpm.sh"],
+        "gap": "IronKeys creates keys only in a TPM or Windows CNG and deletes them only in CNG; generating keys elsewhere, rotation, backup and revocation are the caller's. A provider's validation is the operator's declaration, which IronKeys records but cannot check."
+      }
+    },
+    {
+      "framework": "sp800-53",
+      "id": "SC-13",
+      "title": "Cryptographic Protection",
+      "bearing": "IronKeys signs and agrees keys, in a device or service or through IronCrypto.",
+      "compliance": {
+        "state": "unmet",
+        "reason": "IronKeys computes digests and encodes signatures with IronCrypto, which is not CMVP validated, and software keys use IronCrypto throughout. A token, TPM or KMS may perform the private-key operation in a validated module, but IronKeys cannot establish that it does."
+      }
+    },
+    {
+      "framework": "cmmc",
+      "id": "SC.L2-3.13.10",
+      "title": "Establish and manage cryptographic keys for cryptography employed in organizational systems",
+      "bearing": "IronKeys is how a caller reaches a private key wherever it is kept, under a custody policy the host sets.",
+      "compliance": {
+        "state": "partial",
+        "evidence": ["src/lib.rs", "docs/DESIGN.md", "scripts/test-softhsm.sh", "scripts/test-swtpm.sh"],
+        "gap": "Key generation outside a TPM or Windows CNG, rotation, backup and revocation are the caller's, and a provider's validation is a declaration IronKeys cannot check."
+      }
+    },
+    {
+      "framework": "cmmc",
+      "id": "SC.L2-3.13.11",
+      "title": "Employ FIPS-validated cryptography when used to protect the confidentiality of CUI",
+      "bearing": "IronKeys performs or requests the private-key operations that protect data.",
+      "compliance": {
+        "state": "unmet",
+        "reason": "IronCrypto, which IronKeys uses for digests, encodings and software keys, is not CMVP validated, and IronKeys cannot establish that a device or service it reaches is."
+      }
+    }
+  ]
+}

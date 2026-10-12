@@ -85,6 +85,11 @@ maintained here now.
   kind never implies validation.
 - IronCrypto is not CMVP validated. A validation is planned, with no date.
 
+Its control statements, for compliance tooling, are in
+[docs/controls.json](docs/controls.json): key management (SP 800-53 SC-12,
+CMMC SC.L2-3.13.10) is partial and FIPS-validated cryptography (SC-13,
+SC.L2-3.13.11) is unmet. IronEvidence writes them as OSCAL.
+
 ## Plan
 
 See [docs/DESIGN.md](docs/DESIGN.md) for the extraction plan from

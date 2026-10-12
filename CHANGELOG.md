@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Added `docs/controls.json`: IronKeys' statements against NIST SP 800-53
+  (SC-12, SC-13) and CMMC 2.0 (SC.L2-3.13.10, SC.L2-3.13.11) in the stack's
+  `ironsecurity-controls/1` form, for IronEvidence. Key management is partial
+  and FIPS-validated cryptography unmet. Each is IronKeys' claim about
+  itself, not an assessment.
+
 ## 0.1.2
 
 Changes `ironkeys` and `ironkeys-kms`; the other crates stay at 0.1.0.
