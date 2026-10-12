@@ -77,7 +77,7 @@ Unsafe code is confined to the two FFI crates. Everything is P-384 only today.
      `ECC_NIST_P384` of the right usage. They are `Custody::Service`, so the
      `Hardware` policy refuses them. A returned signature is verified against
      the bound key before it is passed on. Tested against a mock KMS on
-     loopback; not run against AWS. Not carried over from IPG: ML-DSA signing
+     loopback, and run once against AWS KMS in us-east-1 at 0.1.2. Not carried over from IPG: ML-DSA signing
      and the key-file format.
    - **Windows CNG (done).** `cng::CngSigner`, `CngKeyAgreement`,
      `cng::create` and `cng::delete`, over the Microsoft Platform Crypto

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The KMS provider has been run against AWS KMS: signing and key agreement
+  with two `ECC_NIST_P384` keys in us-east-1 over TLS 1.3, checked by
+  IronCrypto, on 2026-10-12. Once, by hand; CI still uses the mock.
 - Added `docs/controls.json`: IronKeys' statements against NIST SP 800-53
   (SC-12, SC-13) and CMMC 2.0 (SC.L2-3.13.10, SC.L2-3.13.11) in the stack's
   `ironsecurity-controls/1` form, for IronEvidence. Key management is partial

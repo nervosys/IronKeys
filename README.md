@@ -7,8 +7,8 @@ software, a PKCS#11 HSM, a TPM 2.0, Windows CNG or AWS KMS.
 software provider exist and are tested. The PKCS#11 provider signs and agrees
 with keys in a token (tested against SoftHSM), and the TPM 2.0 provider with
 keys wrapped by a TPM (tested against swtpm). The AWS KMS provider signs and
-agrees with keys in KMS (tested against a mock KMS on loopback, not against
-AWS). The Windows CNG provider signs and agrees with keys persisted in the
+agrees with keys in KMS (tested against a mock KMS on loopback, and once
+against AWS KMS in us-east-1). The Windows CNG provider signs and agrees with keys persisted in the
 machine's TPM (tested against one Windows TPM). IronPrivacyGuard depends on
 `ironkeys-pkcs11`, `ironkeys-cng`, `ironkeys-tpm2` and `ironkeys-kms`; it does
 not use the `ironkeys` interface or providers yet.
@@ -67,12 +67,16 @@ maintained here now.
   no TPM, so its device test runs only when `IRONKEYS_TEST_CNG=1` is set. It
   covers the Platform Crypto Provider only, not software CNG providers or
   smart cards.
-- The KMS provider has been run against a mock KMS over plain HTTP on
-  loopback. It has not been run against AWS, and its TLS path is exercised
-  here only as far as building the configuration; IronPrivacyGuard's tests
-  cover the same transport code against a TLS server. A test against real
-  keys runs when `IRONKEYS_TEST_KMS_SIGNING_ARN` and
-  `IRONKEYS_TEST_KMS_AGREEMENT_ARN` are set.
+- The KMS provider's automated tests run against a mock KMS over plain HTTP
+  on loopback. It has been run against AWS once, by hand, at 0.1.2
+  (2026-10-12): two new `ECC_NIST_P384` keys in us-east-1, one signing and
+  one agreeing over TLS 1.3 to the public endpoint, with the signature and
+  shared secret checked by IronCrypto against the public keys KMS returned.
+  The keys were then scheduled for deletion. CI does not do this; it runs
+  when `IRONKEYS_TEST_KMS_SIGNING_ARN` and `IRONKEYS_TEST_KMS_AGREEMENT_ARN`
+  are set, and makes billable KMS requests. FIPS endpoints, the GovCloud and
+  China partitions, and the credential sources other than the one on that
+  machine have not been run against AWS.
 - The KMS provider does not cache credentials or reuse connections: every
   operation resolves credentials and opens a connection.
 - Every provider but the software one supports P-384 only. The PKCS#11 and

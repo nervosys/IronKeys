@@ -7,7 +7,8 @@ store. No AWS SDK and no third-party TLS library.
 
 Use it through `ironkeys` with the `kms` feature, which adds the custody
 policy and the `Signer` and `KeyAgreement` implementations. P-384 only.
-Tested against a mock KMS on loopback; it has not been run against AWS.
+Tested against a mock KMS on loopback, and run once by hand against AWS KMS
+in us-east-1, through the `ironkeys` provider, at 0.1.2.
 
 Nothing here is FIPS 140 validated. AWS's HSMs are; this client and
 IronCrypto are not.
