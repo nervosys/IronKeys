@@ -1,6 +1,6 @@
 [package]
 name = "ironkeys"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 rust-version = "1.88"
 license = "AGPL-3.0-or-later"
@@ -31,7 +31,7 @@ ironkeys-pkcs11 = { path = "crates/ironkeys-pkcs11", version = "0.1.0", optional
 # The TPM 2.0 provider: the native command layer with its device transports.
 ironkeys-tpm2 = { path = "crates/ironkeys-tpm2", version = "0.1.0", features = ["device"], optional = true }
 # The AWS KMS provider: the client, with its TLS and bundled roots.
-ironkeys-kms = { path = "crates/ironkeys-kms", version = "0.1.1", optional = true }
+ironkeys-kms = { path = "crates/ironkeys-kms", version = "0.1.2", optional = true }
 ic-ec = { version = ">=0.2.21, <0.3", optional = true }
 ic-hash = { version = ">=0.2.21, <0.3", optional = true }
 ic-pkix = { version = ">=0.2.21, <0.3", optional = true }

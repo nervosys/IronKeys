@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.2
+
+Changes `ironkeys` and `ironkeys-kms`; the other crates stay at 0.1.0.
+
+- `ironkeys-kms` moves to IronSocketLayer 0.5.0, which validates server
+  certificates with IronPKI 0.2.0. Nothing in this crate's interface or
+  handshake settings changes, and no caller-named certificate policy is set:
+  any policy is acceptable, as before.
+
 ## 0.1.1
 
 Changes `ironkeys` and `ironkeys-kms`; the other crates stay at 0.1.0.
