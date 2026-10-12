@@ -23,9 +23,11 @@ Out of scope:
 - Certificates. They belong to IronPKI.
 - Any claim of validation. IronKeys records declarations.
 
-## Where the code is today
+## Where the code was
 
-Everything below is in IronPrivacyGuard (master `a6b69b7`):
+Before the extraction, everything below was in IronPrivacyGuard (master
+`a6b69b7`). The FFI crates, `src/tpm2/` and the KMS client have since moved
+here, and IPG depends on them:
 
 | Code | Lines | Notes |
 | --- | --- | --- |
@@ -46,14 +48,14 @@ Unsafe code is confined to the two FFI crates. Everything is P-384 only today.
    `SoftwareSigner`.
 2. **FFI crates (copied).** `ipg-pkcs11` and `ipg-cng` are here as
    `ironkeys-pkcs11` and `ironkeys-cng`, from IPG commit `1e12250`, unchanged
-   apart from names. IPG still builds its own copies: it pins exact versions
-   from crates.io, so it can depend on these only once they are published.
-   Until then a fix to either copy must be made in both.
+   apart from names. IPG removed its copies and depends on these from
+   0.1.0.
 3. **TPM command layer (copied).** `src/tpm2/` is here as `ironkeys-tpm2`,
    from IPG commit `1ffc55e`. It needed an error type, a random source and
    two P-384 helpers of its own in place of IPG's; nothing else changed. It
    keeps IPG's error codes as strings so that IPG's adapter maps them one to
-   one. IPG's TPM and swtpm tests have not been run against this copy.
+   one. IPG removed its copy and depends on this crate from 0.1.0; its
+   swtpm suite, including attestation, passes against it.
 4. **Backends.** Implement `Signer` and `KeyAgreement` for each backend here.
    IPG keeps thin adapters from these to its `IdentityKey` trait.
    - **PKCS#11 (done).** `pkcs11::Pkcs11Signer` and `Pkcs11KeyAgreement`. A
@@ -93,10 +95,14 @@ Unsafe code is confined to the two FFI crates. Everything is P-384 only today.
    three ways: JSON is read by `ic-json`, the environment variables are
    `IRONKEYS_KMS_ENDPOINT` and `IRONKEYS_KMS_FIPS`, and `Client` takes an
    explicit endpoint and credentials so that a caller, or a test, need not
-   set process environment. Until IPG depends on this crate, a fix to either
-   copy must be made in both, and so must a root-store update.
-6. **IPG adoption.** IPG's `CustodyPolicy` and custody reporting map onto the
-   types here.
+   set process environment. From 0.1.1 a client also takes its FIPS mode
+   and web identity session name, and offers ML-DSA-65 public keys and
+   external-mu signing. IPG removed its client and its copy of the roots and
+   depends on this crate from 0.1.1; root-store updates are made here.
+6. **IPG adoption (partly done).** IPG takes the FFI crates, the TPM layer
+   and the KMS client from here. Not done: IPG's key backends still implement
+   its own `IdentityKey` directly instead of adapting the providers here, and
+   its `CustodyPolicy` and custody reporting are still its own.
 
 Each step should leave IPG's full test matrix passing.
 

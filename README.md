@@ -9,8 +9,9 @@ with keys in a token (tested against SoftHSM), and the TPM 2.0 provider with
 keys wrapped by a TPM (tested against swtpm). The AWS KMS provider signs and
 agrees with keys in KMS (tested against a mock KMS on loopback, not against
 AWS). The Windows CNG provider signs and agrees with keys persisted in the
-machine's TPM (tested against one Windows TPM). IronPrivacyGuard still uses
-its own copies of the code moved here.
+machine's TPM (tested against one Windows TPM). IronPrivacyGuard depends on
+`ironkeys-pkcs11`, `ironkeys-cng`, `ironkeys-tpm2` and `ironkeys-kms`; it does
+not use the `ironkeys` interface or providers yet.
 
 ## What is here
 
@@ -40,21 +41,25 @@ SDK or third-party crate is used.
 | `crates/ironkeys-tpm2` | TPM 2.0 in safe Rust: marshalling, structures, software MakeCredential and, with `device`, HMAC sessions and commands over Windows TBS, a Linux device or swtpm |
 | `crates/ironkeys-kms` | AWS KMS client in safe Rust: the credential chain, SigV4, and the key operations over IronSocketLayer's TLS 1.3 with a bundled root store |
 
-Unsafe code is confined to the two FFI crates. They are IronPrivacyGuard's
-`ipg-pkcs11` and `ipg-cng` at commit `1e12250`, unchanged apart from names.
+Unsafe code is confined to the two FFI crates. They came from
+IronPrivacyGuard's `ipg-pkcs11` and `ipg-cng` at commit `1e12250`, unchanged
+apart from names.
 Their device tests are ignored or skipped unless a token or TPM is configured.
 
-`ironkeys-tpm2` is IronPrivacyGuard's `src/tpm2` at commit `1ffc55e` with its
-imports re-rooted and its items made public. Its unit tests pass here, and the
-TPM provider's swtpm test drives its command layer: storage root, key
-creation, loading, salted HMAC sessions, signing and ECDH. Its attestation
-commands are exercised only by IronPrivacyGuard's own tests.
+`ironkeys-tpm2` came from IronPrivacyGuard's `src/tpm2` at commit `1ffc55e`
+with its imports re-rooted and its items made public. Its unit tests pass
+here, and the TPM provider's swtpm test drives its command layer: storage
+root, key creation, loading, salted HMAC sessions, signing and ECDH. Its
+attestation commands are exercised only by IronPrivacyGuard's tests, which
+run against this crate.
 
-`ironkeys-kms` is IronPrivacyGuard's `src/kms.rs` at commit `0e6344d` with its
-types re-rooted, its JSON read by IronCrypto's `ic-json`, and its environment
-variables renamed (`IRONKEYS_KMS_ENDPOINT`, `IRONKEYS_KMS_FIPS`). A client can
-also be given its endpoint and credentials directly. The bundled roots in
-`crates/ironkeys-kms/data` are IPG's, byte for byte.
+`ironkeys-kms` came from IronPrivacyGuard's `src/kms.rs` at commit `0e6344d`
+with its types re-rooted, its JSON read by IronCrypto's `ic-json`, and its
+environment variables renamed (`IRONKEYS_KMS_ENDPOINT`, `IRONKEYS_KMS_FIPS`).
+A client can also be given its endpoint, credentials and FIPS mode directly,
+which is how IronPrivacyGuard uses it. The bundled roots in
+`crates/ironkeys-kms/data` are the ones IPG shipped, byte for byte; they are
+maintained here now.
 
 ## What it does not do
 

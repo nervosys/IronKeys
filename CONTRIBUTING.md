@@ -28,9 +28,10 @@
   touches a device or the network.
 - `Validation` records what an operator declares. Nothing here may present a
   declaration as a finding.
-- `ironkeys-pkcs11`, `ironkeys-cng`, `ironkeys-tpm2` and `ironkeys-kms` are
-  copies of code in IronPrivacyGuard. Until IronPrivacyGuard depends on these
-  crates, a fix to one copy is made in both.
+- IronPrivacyGuard depends on `ironkeys-pkcs11`, `ironkeys-cng`,
+  `ironkeys-tpm2` and `ironkeys-kms` at exact versions. A change to one of
+  them reaches IPG only through a release, and IPG's test matrix should pass
+  against it before that release is adopted.
 - A provider is tested against a device or a stand-in for one, and the
   documentation says which: SoftHSM, swtpm, a mock KMS, one Windows TPM.
 - Break the thing and confirm the test fails. A test that passes on broken
