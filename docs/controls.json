@@ -2,7 +2,7 @@
   "schema": "ironsecurity-controls/1",
   "project": "IronKeys",
   "description": "Key custody for the IronSecurity stack: one interface over private keys held in software, a PKCS#11 token or HSM, a TPM 2.0, Windows CNG or AWS KMS, with a policy for which of those a host accepts. A library; it is not an information system.",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "fipsValidated": false,
   "controls": [
     {

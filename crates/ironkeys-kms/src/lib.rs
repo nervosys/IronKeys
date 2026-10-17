@@ -668,8 +668,8 @@ fn unavailable() -> Error {
     )
 }
 
-fn hex_sha256(data: &[u8]) -> String {
-    hex(Sha256::digest(data))
+fn hex_sha256(data: &[u8]) -> Result<String> {
+    Ok(hex(Sha256::digest(data)?))
 }
 fn hmac(key: &[u8], data: &[u8]) -> Result<Vec<u8>> {
     Ok(HmacSha256::mac(key, data)?.as_ref().to_vec())
@@ -698,12 +698,12 @@ fn sigv4_authorization(
         .join(";");
     let canonical_request = format!(
         "{method}\n{path}\n\n{canonical_headers}\n{signed_headers}\n{}",
-        hex_sha256(body)
+        hex_sha256(body)?
     );
     let scope = format!("{date}/{region}/{service}/aws4_request");
     let string_to_sign = format!(
         "AWS4-HMAC-SHA256\n{amz_date}\n{scope}\n{}",
-        hex_sha256(canonical_request.as_bytes())
+        hex_sha256(canonical_request.as_bytes())?
     );
     let key = Zeroizing::new(format!("AWS4{secret_key}"));
     let mut signing = Zeroizing::new(hmac(key.as_bytes(), date.as_bytes())?);

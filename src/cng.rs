@@ -241,7 +241,8 @@ impl CngSigner {
         policy: CustodyPolicy,
     ) -> std::result::Result<Self, OpenError> {
         let (storage, key, spki) = open(name, usage_auth, Role::Sign, provider, policy)?;
-        key.sign_digest(ic_hash::Sha384::digest(b"IronKeys CNG authorization check").as_ref())?;
+        // Any 48 bytes will do: the signature only proves the authorization.
+        key.sign_digest(&[0x5a; 48])?;
         Ok(Self {
             key,
             spki,
@@ -283,7 +284,7 @@ impl Signer for CngSigner {
             ));
         }
         // NCryptSignHash over the SHA-384 digest is ECDSA-SHA384 over the message.
-        let digest = ic_hash::Sha384::digest(message);
+        let digest = ic_hash::Sha384::digest(message)?;
         let raw = self
             .key
             .sign_digest(digest.as_ref())

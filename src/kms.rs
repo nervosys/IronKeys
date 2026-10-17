@@ -153,7 +153,7 @@ impl Signer for KmsSigner {
         }
         // ECDSA_SHA_384 over the SHA-384 digest is ECDSA-SHA384 over the message.
         let mut digest = [0u8; 48];
-        digest.copy_from_slice(ic_hash::Sha384::digest(message).as_ref());
+        digest.copy_from_slice(ic_hash::Sha384::digest(message)?.as_ref());
         let raw = self
             .client
             .sign_p384_digest(&self.arn, &digest)
@@ -355,7 +355,7 @@ mod tests {
                 // mock signs the one message whose digest it expects.
                 assert_eq!(
                     unb64(&member(body, "Message")).unwrap(),
-                    ic_hash::Sha384::digest(MESSAGE).as_ref()
+                    ic_hash::Sha384::digest(MESSAGE).unwrap().as_ref()
                 );
                 let mut raw = [0u8; 96];
                 let key = if seen.forge { scalar(9) } else { scalar(1) };

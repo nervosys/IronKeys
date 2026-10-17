@@ -1,6 +1,6 @@
 [package]
 name = "ironkeys"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.88"
 license = "AGPL-3.0-or-later"
@@ -20,36 +20,38 @@ members = [
 
 [dependencies]
 # The signing interface and custody classes come from IronCrypto.
-# 0.2.24 is the first release with the ProviderUnavailable and
+# 0.3.1 is the minimum: hashes refuse in the error state from 0.3.0, and
+# 0.3.1 scrubs registers and stack after secret-handling code. 0.2.24 was
+# the first release with the ProviderUnavailable and
 # ProviderRefused error kinds the device providers report.
-ic-core = { version = ">=0.2.24, <0.3", default-features = false }
+ic-core = { version = ">=0.3.1, <0.4", default-features = false }
 # In-memory keys: IronCrypto's signer, first released in 0.2.21.
-ic-sig = { version = ">=0.2.21, <0.3", default-features = false, optional = true }
+ic-sig = { version = ">=0.3.1, <0.4", default-features = false, optional = true }
 # The PKCS#11 provider: the native boundary, and IronCrypto for the digest,
 # point validation and signature encoding around it.
-ironkeys-pkcs11 = { path = "crates/ironkeys-pkcs11", version = "0.1.0", optional = true }
+ironkeys-pkcs11 = { path = "crates/ironkeys-pkcs11", version = "0.2.0", optional = true }
 # The TPM 2.0 provider: the native command layer with its device transports.
-ironkeys-tpm2 = { path = "crates/ironkeys-tpm2", version = "0.1.0", features = ["device"], optional = true }
+ironkeys-tpm2 = { path = "crates/ironkeys-tpm2", version = "0.2.0", features = ["device"], optional = true }
 # The AWS KMS provider: the client, with its TLS and bundled roots.
-ironkeys-kms = { path = "crates/ironkeys-kms", version = "0.1.2", optional = true }
-ic-ec = { version = ">=0.2.21, <0.3", optional = true }
-ic-hash = { version = ">=0.2.21, <0.3", optional = true }
-ic-pkix = { version = ">=0.2.21, <0.3", optional = true }
+ironkeys-kms = { path = "crates/ironkeys-kms", version = "0.2.0", optional = true }
+ic-ec = { version = ">=0.3.1, <0.4", optional = true }
+ic-hash = { version = ">=0.3.1, <0.4", optional = true }
+ic-pkix = { version = ">=0.3.1, <0.4", optional = true }
 
 # The Windows CNG provider: the native boundary to the Platform Crypto
 # Provider.
 [target.'cfg(windows)'.dependencies]
-ironkeys-cng = { path = "crates/ironkeys-cng", version = "0.1.0", optional = true }
+ironkeys-cng = { path = "crates/ironkeys-cng", version = "0.2.0", optional = true }
 
 # The software provider's tests build a key and verify what it signs.
 [dev-dependencies]
-ic-pkix = { version = ">=0.2.21, <0.3" }
-ic-drbg = { version = ">=0.2.21, <0.3", features = ["std"] }
-ic-ec = { version = ">=0.2.21, <0.3" }
-ic-sig = { version = ">=0.2.21, <0.3" }
+ic-pkix = { version = ">=0.3.1, <0.4" }
+ic-drbg = { version = ">=0.3.1, <0.4", features = ["std"] }
+ic-ec = { version = ">=0.3.1, <0.4" }
+ic-sig = { version = ">=0.3.1, <0.4" }
 # The KMS provider's tests run a mock KMS that reads the requests.
-ic-json = { version = ">=0.2.21, <0.3" }
-ic-hash = { version = ">=0.2.21, <0.3" }
+ic-json = { version = ">=0.3.1, <0.4" }
+ic-hash = { version = ">=0.3.1, <0.4" }
 
 [features]
 default = ["std"]

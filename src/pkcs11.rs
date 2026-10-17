@@ -437,7 +437,7 @@ impl Signer for Pkcs11Signer {
         }
         // Raw CKM_ECDSA over the SHA-384 digest is ECDSA-SHA384 over the message.
         let mut digest = [0u8; 48];
-        digest.copy_from_slice(ic_hash::Sha384::digest(message).as_ref());
+        digest.copy_from_slice(ic_hash::Sha384::digest(message)?.as_ref());
         let raw = self.worker.call(Job::Sign(digest))?;
         if raw.len() != 96 {
             return Err(Error::new(

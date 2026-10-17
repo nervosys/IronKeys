@@ -147,7 +147,7 @@ mod tests {
         // Obtained from the compiled webpki-roots 1.0.9 store before removal,
         // independently of scripts/import-tls-roots.py's source-data extraction.
         assert_eq!(
-            crate::hex(ic_hash::Sha256::digest(&canonical)),
+            crate::hex(ic_hash::Sha256::digest(&canonical).unwrap()),
             "a8de3f65ac091245cdd1a2a5a25e34621948c82867decfb34fd8dd1fb049cd8b"
         );
     }

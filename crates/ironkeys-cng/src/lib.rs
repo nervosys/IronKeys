@@ -770,7 +770,7 @@ mod tests {
                 .unwrap();
             let signing_point = ecdsa.public_point().unwrap();
             let message = b"ironkeys cng probe";
-            let digest = ic_hash::Sha384::digest(message);
+            let digest = ic_hash::Sha384::digest(message).unwrap();
             let signature = ecdsa.sign_digest(digest.as_ref()).unwrap();
             assert_eq!(signature.len(), 96);
             EcdsaP384Sha384::verify(&signing_point, message, &signature).unwrap();
@@ -1010,7 +1010,7 @@ mod tests {
             let ak = created[10..14].to_vec();
             let digest = {
                 use ic_core::traits::Digest;
-                ic_hash::Sha256::digest(&auth).as_ref().to_vec()
+                ic_hash::Sha256::digest(&auth).unwrap().as_ref().to_vec()
             };
             for (label, candidate) in [("raw", auth.to_vec()), ("sha256", digest)] {
                 let mut body = object.clone();

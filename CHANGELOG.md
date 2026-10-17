@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+Version 0.2.0 of every crate, not yet released: IronCrypto 0.3 changes the
+types these crates expose, so the change is breaking for callers even though
+IronKeys' own interface is the same.
+
+- Moves to IronCrypto 0.3.1. From 0.3.0 hashes and MACs refuse once the
+  module is in its error state; IronKeys passes that refusal on as an error
+  where it used to compute a digest regardless. 0.3.1 clears vector
+  registers and dead stack after code that handles secrets.
+- `ironkeys-kms` moves to IronSocketLayer 0.7.0, which is on IronCrypto 0.3.
+- `CngSigner::open` proves the usage authorization by signing a fixed
+  48-byte value instead of hashing a fixed message first.
+
 - The KMS provider has been run against AWS KMS: signing and key agreement
   with two `ECC_NIST_P384` keys in us-east-1 over TLS 1.3, checked by
   IronCrypto, on 2026-10-12. Once, by hand; CI still uses the mock.

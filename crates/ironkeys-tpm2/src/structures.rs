@@ -38,8 +38,8 @@ fn malformed(message: &str) -> Error {
 /// The digest of a name algorithm.
 pub fn hash(algorithm: u16, data: &[u8]) -> Result<Vec<u8>> {
     match algorithm {
-        ALG_SHA256 => Ok(Sha256::digest(data).as_ref().to_vec()),
-        ALG_SHA384 => Ok(Sha384::digest(data).as_ref().to_vec()),
+        ALG_SHA256 => Ok(Sha256::digest(data)?.as_ref().to_vec()),
+        ALG_SHA384 => Ok(Sha384::digest(data)?.as_ref().to_vec()),
         _ => Err(malformed("unsupported hash algorithm")),
     }
 }

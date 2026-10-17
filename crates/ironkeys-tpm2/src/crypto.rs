@@ -94,15 +94,15 @@ pub fn kdfa(
     Ok(out)
 }
 
-fn mgf1_sha256(seed: &[u8], length: usize) -> Vec<u8> {
+fn mgf1_sha256(seed: &[u8], length: usize) -> Result<Vec<u8>> {
     let mut out = Vec::with_capacity(length + 32);
     let mut counter = 0u32;
     while out.len() < length {
-        out.extend_from_slice(Sha256::digest(&[seed, &counter.to_be_bytes()].concat()).as_ref());
+        out.extend_from_slice(Sha256::digest(&[seed, &counter.to_be_bytes()].concat())?.as_ref());
         counter += 1;
     }
     out.truncate(length);
-    out
+    Ok(out)
 }
 
 /// RSAES-OAEP encryption with SHA-256 and MGF1-SHA-256 (RFC 8017, 7.1.1). TPM labels
@@ -122,16 +122,16 @@ pub fn oaep_encrypt(public: &Public, label: &str, message: &[u8]) -> Result<Vec<
         return Err(Error::new("invalid_request", "OAEP message too long"));
     }
     let label = [label.as_bytes(), &[0]].concat();
-    let mut db = Sha256::digest(&label).as_ref().to_vec();
+    let mut db = Sha256::digest(&label)?.as_ref().to_vec();
     db.resize(k - message.len() - h - 2, 0);
     db.push(1);
     db.extend_from_slice(message);
     let seed = crate::random::<32>()?;
-    for (byte, mask) in db.iter_mut().zip(mgf1_sha256(seed.as_ref(), k - h - 1)) {
+    for (byte, mask) in db.iter_mut().zip(mgf1_sha256(seed.as_ref(), k - h - 1)?) {
         *byte ^= mask;
     }
     let mut masked_seed = seed.to_vec();
-    for (byte, mask) in masked_seed.iter_mut().zip(mgf1_sha256(&db, h)) {
+    for (byte, mask) in masked_seed.iter_mut().zip(mgf1_sha256(&db, h)?) {
         *byte ^= mask;
     }
     let encoded = [&[0][..], &masked_seed, &db].concat();

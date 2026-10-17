@@ -1,6 +1,6 @@
 [package]
 name = "ironkeys-cng"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 # As in IronPrivacyGuard's ipg-cng, from which this code is moved unchanged.
 rust-version = "1.87"
@@ -12,6 +12,6 @@ keywords = ["cryptography", "ironsecurity"]
 categories = ["cryptography"]
 
 [dev-dependencies]
-ic-core = { version = ">=0.2.21, <0.3" }
-ic-ec = { version = ">=0.2.21, <0.3" }
-ic-hash = { version = ">=0.2.21, <0.3" }
+ic-core = { version = ">=0.3.1, <0.4" }
+ic-ec = { version = ">=0.3.1, <0.4" }
+ic-hash = { version = ">=0.3.1, <0.4" }
