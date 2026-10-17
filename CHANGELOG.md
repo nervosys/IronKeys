@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
-Version 0.2.0 of every crate, not yet released: IronCrypto 0.3 changes the
+Version 0.2.0 of every crate. IronCrypto 0.3 changes the
 types these crates expose, so the change is breaking for callers even though
 IronKeys' own interface is the same.
 
